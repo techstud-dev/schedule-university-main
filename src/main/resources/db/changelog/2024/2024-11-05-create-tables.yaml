@@ -1,0 +1,398 @@
+databaseChangeLog:
+  - changeSet:
+      id: "2024-01-22-create-schedule-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "schedule"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "created"
+                  type: "date"
+              - column:
+                  name: "modified"
+                  type: "date"
+              - column:
+                  name: "snapshot_date"
+                  type: "date"
+              - column:
+                  name: "id"
+                  type: "int8"
+                  constraints:
+                    primaryKey: true
+
+  - changeSet:
+      id: "2024-01-22-create-university-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "university"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "id"
+                  type: "int8"
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: "full_name"
+                  type: "varchar(255)"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: "link"
+                  type: "varchar(255)"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: "name"
+                  type: "varchar(255)"
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: "university"
+            columnNames: "name, full_name, link"
+            constraintName: "university_name_full_name_link_key"
+
+  - changeSet:
+      id: "2024-01-22-create-place-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "place"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "id"
+                  type: "int8"
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: "university_id"
+                  type: "int8"
+              - column:
+                  name: "name"
+                  type: "varchar(255)"
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: "place"
+            columnNames: "name"
+            constraintName: "place_name_key"
+        - addForeignKeyConstraint:
+            baseTableName: "place"
+            baseColumnNames: "university_id"
+            referencedTableName: "university"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_place_university"
+
+  - changeSet:
+      id: "2024-01-22-create-schedule_day-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "schedule_day"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "date"
+                  type: "date"
+              - column:
+                  name: "id"
+                  type: "int8"
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: "schedule_id"
+                  type: "int8"
+              - column:
+                  name: "day_of_week"
+                  type: "varchar(255)"
+        - sql:
+            sql: "ALTER TABLE tchs01.schedule_day ADD CONSTRAINT day_of_week_check CHECK (day_of_week IN ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'));"
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_day"
+            baseColumnNames: "schedule_id"
+            referencedTableName: "schedule"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_day_schedule"
+
+  - changeSet:
+      id: "2024-01-22-create-schedule_group-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "schedule_group"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "id"
+                  type: "int8"
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: "university_id"
+                  type: "int8"
+              - column:
+                  name: "group_code"
+                  type: "varchar(255)"
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: "schedule_group"
+            columnNames: "group_code"
+            constraintName: "schedule_group_group_code_key"
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_group"
+            baseColumnNames: "university_id"
+            referencedTableName: "university"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_group_university"
+
+  - changeSet:
+      id: "2024-01-22-create-teacher-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "teacher"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "id"
+                  type: "int8"
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: "university_id"
+                  type: "int8"
+              - column:
+                  name: "name"
+                  type: "varchar(255)"
+        - addForeignKeyConstraint:
+            baseTableName: "teacher"
+            baseColumnNames: "university_id"
+            referencedTableName: "university"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_teacher_university"
+
+  - changeSet:
+      id: "2024-01-22-create-time_sheet-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "time_sheet"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "id"
+                  type: "int8"
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: "time_from"
+                  type: "time(6)"
+              - column:
+                  name: "time_to"
+                  type: "time(6)"
+              - column:
+                  name: "university_id"
+                  type: "int8"
+        - addForeignKeyConstraint:
+            baseTableName: "time_sheet"
+            baseColumnNames: "university_id"
+            referencedTableName: "university"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_time_sheet_university"
+
+  - changeSet:
+      id: "2024-01-22-create-schedule_object-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "schedule_object"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "created"
+                  type: "date"
+              - column:
+                  name: "modified"
+                  type: "date"
+              - column:
+                  name: "id"
+                  type: "int8"
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: "place_id"
+                  type: "int8"
+              - column:
+                  name: "teacher_id"
+                  type: "int8"
+              - column:
+                  name: "name"
+                  type: "varchar(255)"
+              - column:
+                  name: "type"
+                  type: "varchar(255)"
+        - sql:
+            sql: "ALTER TABLE tchs01.schedule_object ADD CONSTRAINT schedule_object_type_check CHECK (type IN ('LECTURE', 'PRACTICE', 'LAB', 'EXAM', 'CONSULTATION', 'INDEPENDENT_WORK', 'UNKNOWN'));"
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_object"
+            baseColumnNames: "teacher_id"
+            referencedTableName: "teacher"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_object_teacher"
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_object"
+            baseColumnNames: "place_id"
+            referencedTableName: "place"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_object_place"
+
+  - changeSet:
+      id: "2024-01-22-create-schedule_object_group-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "schedule_object_group"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "group_id"
+                  type: "int8"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: "schedule_object_id"
+                  type: "int8"
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_object_group"
+            baseColumnNames: "group_id"
+            referencedTableName: "schedule_group"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_object_group_group"
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_object_group"
+            baseColumnNames: "schedule_object_id"
+            referencedTableName: "schedule_object"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_object_group_schedule_object"
+
+  - changeSet:
+      id: "2024-01-22-create-schedule_object_mapping-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "schedule_object_mapping"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "id"
+                  type: "int8"
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: "time_sheet_id"
+                  type: "int8"
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_object_mapping"
+            baseColumnNames: "time_sheet_id"
+            referencedTableName: "time_sheet"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_object_mapping_time_sheet"
+
+  - changeSet:
+      id: "2024-01-22-create-schedule_object_mapping_schedule_objects-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "schedule_object_mapping_schedule_objects"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "schedule_object_mapping_id"
+                  type: "int8"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: "schedule_objects_id"
+                  type: "int8"
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_object_mapping_schedule_objects"
+            baseColumnNames: "schedule_object_mapping_id"
+            referencedTableName: "schedule_object_mapping"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_object_mapping_schedule_object_mapping"
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_object_mapping_schedule_objects"
+            baseColumnNames: "schedule_objects_id"
+            referencedTableName: "schedule_object"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_object_mapping_schedule_objects"
+
+  - changeSet:
+      id: "2024-01-22-create-schedule_day_lessons-table"
+      author: "Generated"
+      changes:
+        - createTable:
+            tableName: "schedule_day_lessons"
+            schemaName: "tchs01"
+            columns:
+              - column:
+                  name: "lessons_id"
+                  type: "int8"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: "schedule_day_id"
+                  type: "int8"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: "time_sheet_id"
+                  type: "int8"
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: "schedule_day_lessons"
+            columnNames: "lessons_id"
+            constraintName: "schedule_day_lessons_lessons_id_key"
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_day_lessons"
+            baseColumnNames: "lessons_id"
+            referencedTableName: "schedule_object_mapping"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_day_lessons_lessons"
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_day_lessons"
+            baseColumnNames: "schedule_day_id"
+            referencedTableName: "schedule_day"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_day_lessons_schedule_day"
+        - addForeignKeyConstraint:
+            baseTableName: "schedule_day_lessons"
+            baseColumnNames: "time_sheet_id"
+            referencedTableName: "time_sheet"
+            referencedSchemaName: "tchs01"
+            referencedColumnNames: "id"
+            constraintName: "fk_schedule_day_lessons_time_sheet"

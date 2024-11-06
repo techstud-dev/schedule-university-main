@@ -20,4 +20,7 @@ public class Teacher {
     private University university;
 
     private String name;
+
+    @Version
+    private Long version;
 }

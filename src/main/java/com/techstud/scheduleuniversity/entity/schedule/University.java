@@ -24,4 +24,7 @@ public class University {
     @Column(name = "link", nullable = false)
     private String link;
 
+    @Version
+    private Long version;
+
 }

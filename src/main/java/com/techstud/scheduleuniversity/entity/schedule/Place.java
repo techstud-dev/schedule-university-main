@@ -21,4 +21,7 @@ public class Place {
 
     @Column(name = "name", nullable = false, unique = true)
     private String name;
+
+    @Version
+    private Long version;
 }

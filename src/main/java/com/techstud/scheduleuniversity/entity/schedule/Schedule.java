@@ -35,4 +35,7 @@ public class Schedule {
     private Map<DayOfWeek, ScheduleDay> oddWeekSchedule;
 
     private LocalDate snapshotDate;
+
+    @Version
+    private Long version;
 }

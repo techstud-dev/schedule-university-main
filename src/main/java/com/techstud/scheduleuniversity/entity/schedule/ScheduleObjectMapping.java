@@ -23,4 +23,7 @@ public class ScheduleObjectMapping {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScheduleObject> scheduleObjects;
+
+    @Version
+    private Long version;
 }

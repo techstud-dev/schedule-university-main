@@ -23,4 +23,7 @@ public class ScheduleDay {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @MapKeyJoinColumn(name = "time_sheet_id")
     private Map<TimeSheet, ScheduleObjectMapping> lessons;
+
+    @Version
+    private Long version;
 }

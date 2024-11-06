@@ -30,4 +30,7 @@ public class TimeSheet {
     @Column(name = "time_to")
     private LocalTime timeTo;
 
+    @Version
+    private Long version;
+
 }

@@ -24,4 +24,7 @@ public class Group {
 
     @Column(name = "group_code", nullable = false, unique = true)
     private String groupCode;
+
+    @Version
+    private Long version;
 }

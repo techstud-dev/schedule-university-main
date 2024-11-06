@@ -41,4 +41,7 @@ public class ScheduleObject {
             inverseJoinColumns = @JoinColumn(name = "group_id")
     )
     private List<Group> groups;
+
+    @Version
+    private Long version;
 }

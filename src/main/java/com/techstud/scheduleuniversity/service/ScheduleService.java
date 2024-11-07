@@ -5,7 +5,6 @@ import com.techstud.scheduleuniversity.entity.schedule.Schedule;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
 import com.techstud.scheduleuniversity.listener.KafkaResponseHandler;
 import com.techstud.scheduleuniversity.repository.ScheduleRepository;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,10 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-import static java.util.UUID.*;
+import static java.util.UUID.randomUUID;
 
 @Service
 @Slf4j
@@ -35,7 +33,6 @@ public class ScheduleService {
 
     public Mono<com.techstud.scheduleuniversity.dto.parser.response.Schedule> importSchedule(ParsingTask task) {
         String id = randomUUID().toString();
-        log.info("Importing schedule with task:\n{}", task);
         Mono<com.techstud.scheduleuniversity.dto.parser.response.Schedule> response =  Mono
                 .<com.techstud.scheduleuniversity.dto.parser.response.Schedule>create(sink -> {
                     responseHandler.register(id, sink);
@@ -43,8 +40,10 @@ public class ScheduleService {
                 })
                 .timeout(Duration.ofSeconds(30))
                 .doOnError(TimeoutException.class, ex -> responseHandler.remove(id))
-                .single();
-        log.info("Success importing schedule! Response: {}", response);
+                .single()
+                .doOnSubscribe(subscription -> log.info("Import schedule task with task: {} started", task))
+                .doOnNext(schedule -> log.info("Import schedule complete {}", schedule))
+                .doOnError(throwable -> log.error("Import schedule task with task: {} failed", task, throwable));
         return response;
     }
 }

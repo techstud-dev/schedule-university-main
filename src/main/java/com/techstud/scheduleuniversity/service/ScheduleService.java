@@ -36,11 +36,14 @@ public class ScheduleService {
     public Mono<com.techstud.scheduleuniversity.dto.parser.response.Schedule> importSchedule(ParsingTask task) {
         String id = randomUUID().toString();
         log.info("Importing schedule with task:\n{}", task);
-        Mono<com.techstud.scheduleuniversity.dto.parser.response.Schedule> response =  Mono.<com.techstud.scheduleuniversity.dto.parser.response.Schedule>create(sink -> {
+        Mono<com.techstud.scheduleuniversity.dto.parser.response.Schedule> response =  Mono
+                .<com.techstud.scheduleuniversity.dto.parser.response.Schedule>create(sink -> {
                     responseHandler.register(id, sink);
                     kafkaProducer.sendToParsingQueue(id,task);
-                }).timeout(Duration.ofSeconds(30))
-                .doOnError(TimeoutException.class, ex -> responseHandler.remove(id));
+                })
+                .timeout(Duration.ofSeconds(30))
+                .doOnError(TimeoutException.class, ex -> responseHandler.remove(id))
+                .single();
         log.info("Success importing schedule! Response: {}", response);
         return response;
     }

@@ -22,6 +22,9 @@ public class Group {
     @JoinColumn(name = "university_id")
     private University university;
 
+    @Column(name = "group_name", nullable = false)
+    private String groupName;
+
     @Column(name = "group_code", nullable = false, unique = true)
     private String groupCode;
 

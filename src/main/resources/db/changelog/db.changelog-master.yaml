@@ -1,3 +1,5 @@
 databaseChangeLog:
   - include:
       file: "db/changelog/2024/2024-11-05-create-tables.yaml"
+  - include:
+      file: "db/changelog/2024/2024-11-07-add-group-name.yaml"

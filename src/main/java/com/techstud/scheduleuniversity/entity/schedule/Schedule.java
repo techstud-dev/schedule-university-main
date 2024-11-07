@@ -36,6 +36,10 @@ public class Schedule {
 
     private LocalDate snapshotDate;
 
+    @ManyToOne
+    @JoinColumn(name = "group_id", nullable = false, referencedColumnName = "id")
+    private Group group;
+
     @Version
     private Long version;
 }

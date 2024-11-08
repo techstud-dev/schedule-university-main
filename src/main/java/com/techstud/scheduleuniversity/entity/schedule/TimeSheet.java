@@ -9,7 +9,7 @@ import java.time.LocalTime;
 @Entity
 @Table(
         name = "time_sheet",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"university_id", "from", "to"})
+        uniqueConstraints = @UniqueConstraint(columnNames = {"university_id", "time_from", "time_to"})
 )
 @NoArgsConstructor
 @Data

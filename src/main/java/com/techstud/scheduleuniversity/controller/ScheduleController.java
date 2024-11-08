@@ -1,8 +1,8 @@
 package com.techstud.scheduleuniversity.controller;
 
 import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
-import com.techstud.scheduleuniversity.dto.parser.response.Schedule;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleObject;
+import com.techstud.scheduleuniversity.entity.schedule.Schedule;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ public class ScheduleController {
     }
 
     @PostMapping("/import")
-    public Mono<com.techstud.scheduleuniversity.dto.parser.response.Schedule> importSchedule(@RequestBody ParsingTask task) {
+    public Mono<Schedule> importSchedule(@RequestBody ParsingTask task) {
         return scheduleService.importSchedule(task);
     }
 

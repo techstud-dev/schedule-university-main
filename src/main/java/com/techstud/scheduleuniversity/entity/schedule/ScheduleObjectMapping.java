@@ -2,13 +2,11 @@ package com.techstud.scheduleuniversity.entity.schedule;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Entity
 @Table(name = "schedule_object_mapping")
-@NoArgsConstructor
 @Data
 public class ScheduleObjectMapping {
 
@@ -26,4 +24,13 @@ public class ScheduleObjectMapping {
 
     @Version
     private Long version;
+
+    public ScheduleObjectMapping(TimeSheet timeSheet, List<ScheduleObject> scheduleObjects) {
+        this.timeSheet = timeSheet;
+        this.scheduleObjects = scheduleObjects;
+    }
+
+    public ScheduleObjectMapping() {
+
+    }
 }

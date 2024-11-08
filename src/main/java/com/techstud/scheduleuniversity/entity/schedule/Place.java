@@ -5,7 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "place")
+@Table(
+        name = "place",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"university_id", "name"})
+)
 @Data
 @NoArgsConstructor
 public class Place {
@@ -15,11 +18,11 @@ public class Place {
     @SequenceGenerator(name = "place_id_seq", sequenceName = "place_id_seq", allocationSize = 1)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "university_id")
+    @ManyToOne(optional = false, cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "university_id", nullable = false)
     private University university;
 
-    @Column(name = "name", nullable = false, unique = true)
+    @Column(name = "name", nullable = false)
     private String name;
 
     @Version

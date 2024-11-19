@@ -35,7 +35,21 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
 
+  mongodb:
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: abuser
+      MONGO_INITDB_ROOT_PASSWORD: abuser
+      MONGO_INITDB_DATABASE: schedule-university
+    volumes:
+      - mongo_data:/data/db
+      - ./src/test/resources/mongo:/docker-entrypoint-initdb.d
+    ports:
+      - "27017:27017"
+
 volumes:
   postgres_data:
   grafana_data:
   prometheus_data:
+  mongo_data:

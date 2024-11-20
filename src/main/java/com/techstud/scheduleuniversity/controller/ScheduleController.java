@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/vi/schedule")
+@RequestMapping("/api/v1/schedule")
 @RequiredArgsConstructor
 @Slf4j
 public class ScheduleController {

@@ -5,10 +5,12 @@ import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.exception.RequestException;
 import com.techstud.scheduleuniversity.validation.RequestValidationService;
 import com.techstud.scheduleuniversity.validation.ResponseValidationService;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Service
 public class ValidationService implements RequestValidationService, ResponseValidationService {
     @Override
     public void validateImportRequest(ApiRequest<ImportDto> importRequest) throws RequestException {

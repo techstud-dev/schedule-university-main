@@ -19,9 +19,8 @@ public class UniversityGroup {
     @SequenceGenerator(name = "university_group_id_seq", sequenceName = "university_group_id_seq", allocationSize = 1)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "university_id")
-    @Fetch(FetchMode.JOIN)
     private University university;
     private String universityGroupId;
     private String groupCode;

@@ -1,5 +1,6 @@
 package com.techstud.scheduleuniversity.dto;
 
+import com.google.gson.Gson;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -95,5 +96,10 @@ public class ApiRequest<T> implements Serializable {
                 example = "asc",
                 type = "string")
         private String order = "asc";
+    }
+
+    @Override
+    public String toString() {
+        return new Gson().toJson(this);
     }
 }

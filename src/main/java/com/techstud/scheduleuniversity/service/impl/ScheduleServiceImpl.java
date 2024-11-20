@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -36,14 +38,17 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Schedule importSchedule(ImportDto importDto) {
-
+        Schedule schedule = null;
         var group = universityGroupRepository.findByGroupCodeAndUniversityName(importDto.getGroupCode(),
                 importDto.getUniversityName());
 
-        Schedule schedule = scheduleRepository
-                .findById(group.getScheduleMongoId())
-                .orElse(null);
+        if (group.getScheduleMongoId() != null) {
+             schedule = scheduleRepository
+                    .findById(group.getScheduleMongoId())
+                    .orElse(null);
+        }
 
         if (schedule == null) {
             log.warn("Not found schedule for group {}. Trying to import schedule from parser", importDto.getGroupCode());

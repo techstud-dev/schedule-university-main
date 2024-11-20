@@ -25,6 +25,8 @@ public class UniversityGroup {
     private University university;
     private String universityGroupId;
     private String groupCode;
-    private String scheduleMonoDbId;
+
+    @Column(name = "schedule_mongo_id")
+    private String scheduleMongoId;
 
 }

@@ -25,8 +25,10 @@ public class KafkaProducer {
     @Value("${kafka.topic.parsing-queue}")
     private String parsingTopic;
 
-    public void sendToParsingQueue(String id, Object objectMessage) {
-        sendToKafka(id, parsingTopic, objectMessage);
+    public UUID sendToParsingQueue(Object objectMessage) {
+        UUID id = UUID.randomUUID();
+        sendToKafka(id.toString(), parsingTopic, objectMessage);
+        return id;
     }
 
 

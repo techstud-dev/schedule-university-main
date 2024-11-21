@@ -22,7 +22,11 @@ public class UniversityGroup {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "university_id")
     private University university;
+
+    @Column(name = "university_group_id")
     private String universityGroupId;
+
+    @Column(name = "group_code")
     private String groupCode;
 
     @Column(name = "schedule_mongo_id")

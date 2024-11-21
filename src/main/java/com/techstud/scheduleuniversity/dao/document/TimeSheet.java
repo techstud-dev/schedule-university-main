@@ -24,4 +24,8 @@ public class TimeSheet implements Serializable {
 
     private LocalTime to;
 
+    @Override
+    public String toString() {
+        return "TimeSheet(from=" + from + ", to=" + to + ")";
+    }
 }

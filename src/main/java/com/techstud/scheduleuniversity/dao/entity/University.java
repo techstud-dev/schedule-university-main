@@ -17,10 +17,16 @@ public class University {
     @SequenceGenerator(name = "university_id_seq", sequenceName = "university_id_seq", allocationSize = 1)
     private Long id;
 
+    @Column(name = "full_name")
     private String fullName;
+
+    @Column(name = "short_name")
     private String shortName;
+
+    @Column(name = "url")
     private String url;
 
+    @Column(name = "mongo_db_id")
     private String mongoDbId;
 
     @Version

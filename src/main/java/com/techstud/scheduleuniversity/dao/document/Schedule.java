@@ -11,6 +11,7 @@ import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -19,7 +20,7 @@ import java.util.Map;
 public class Schedule implements Serializable {
 
     @Id
-    private String id;
+    private String id = UUID.randomUUID().toString();
 
     @DBRef
     private Map<DayOfWeek, ScheduleDay> evenWeekSchedule;

@@ -1,6 +1,9 @@
 package com.techstud.scheduleuniversity.kafka;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.techstud.scheduleuniversity.dao.document.Schedule;
+import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
@@ -15,11 +18,12 @@ import java.util.*;
 public class KafkaMessageObserver {
 
     private static final Set<String> messageInProcessing = new HashSet<>();
+    private static final Map<String, String> responsesFromParser = new HashMap<>();
 
-    private static final Map<String, Object> responsesFromParser = new HashMap<>();
+    ObjectMapper objectMapper = new ObjectMapper();
 
     @Async
-    public static boolean registerMessage(UUID uuid) {
+    public boolean registerMessage(UUID uuid) {
 
         if (messageInProcessing.contains(uuid.toString())) {
             log.warn("Message with id = {} is registered in observer", uuid);
@@ -31,7 +35,12 @@ public class KafkaMessageObserver {
     }
 
     @Async
-    public static Schedule waitForParserResponse(UUID uuid) throws ParserResponseTimeoutException {
+    public void registerResponse(UUID uuid, String response) {
+        responsesFromParser.put(uuid.toString(), response);
+    }
+
+    @Async
+    public Schedule waitForParserResponse(UUID uuid) throws ParserResponseTimeoutException, ParserException {
         Long startTime = System.nanoTime() / 1000000;
         if (!messageInProcessing.contains(uuid.toString())) {
             log.error("Message with id = {} not sent into kafka or not registered", uuid);
@@ -45,11 +54,13 @@ public class KafkaMessageObserver {
         }
         Long endTime = System.nanoTime() / 1000000;
         log.info("End waiting response from parser. Time spent {} ms", endTime - startTime);
-        Object response = responsesFromParser.get(uuid.toString());
-        if (response instanceof Schedule) {
-            return (Schedule) responsesFromParser.get(uuid.toString());
-        } else {
-            throw new ParserException();
+        try {
+            return objectMapper.readValue(responsesFromParser.get(uuid.toString()), Schedule.class);
+        } catch (JsonProcessingException exception) {
+            throw new ParserException("Error parsing response from parser", exception);
+        } finally {
+            messageInProcessing.remove(uuid.toString());
+            responsesFromParser.remove(uuid.toString());
         }
     }
 }

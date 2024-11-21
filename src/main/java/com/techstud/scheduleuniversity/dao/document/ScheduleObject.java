@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -17,7 +18,7 @@ import java.util.List;
 public class ScheduleObject implements Serializable {
 
     @Id
-    private String id;
+    private String id = UUID.randomUUID().toString();
 
     private ScheduleType type;
     private String name;

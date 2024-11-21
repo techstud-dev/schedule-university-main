@@ -16,7 +16,7 @@ public class KafkaMessageObserver {
 
     private static final Set<String> messageInProcessing = new HashSet<>();
 
-    private static final Map<String, Schedule> responsesFromParser = new HashMap<>();
+    private static final Map<String, Object> responsesFromParser = new HashMap<>();
 
     @Async
     public static boolean registerMessage(UUID uuid) {
@@ -45,6 +45,11 @@ public class KafkaMessageObserver {
         }
         Long endTime = System.nanoTime() / 1000000;
         log.info("End waiting response from parser. Time spent {} ms", endTime - startTime);
-        return responsesFromParser.get(uuid.toString());
+        Object response = responsesFromParser.get(uuid.toString());
+        if (response instanceof Schedule) {
+            return (Schedule) responsesFromParser.get(uuid.toString());
+        } else {
+            throw new ParserException();
+        }
     }
 }

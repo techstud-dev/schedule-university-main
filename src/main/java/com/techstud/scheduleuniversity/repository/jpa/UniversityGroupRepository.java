@@ -10,12 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 public interface UniversityGroupRepository extends JpaRepository<UniversityGroup, Long> {
 
-    @Query("SELECT ug FROM UniversityGroup ug " +
-            "JOIN FETCH ug.university u " +
-            "WHERE u.shortName = :universityName AND ug.groupCode = :groupCode")
-    @Transactional
-    UniversityGroup findByGroupCodeAndUniversityName(@Param("groupCode") String groupCode,
-                                                     @Param("universityName") String universityName);
+    UniversityGroup findByUniversity_ShortNameAndGroupCode(String universityName, String groupCode);
 
 
 

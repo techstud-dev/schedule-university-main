@@ -41,7 +41,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Schedule importSchedule(ImportDto importDto) {
         Schedule schedule = null;
-        var group = universityGroupRepository.findByGroupCodeAndUniversityName(importDto.getGroupCode(),
+        var group = universityGroupRepository.findByUniversity_ShortNameAndGroupCode(importDto.getGroupCode(),
                 importDto.getUniversityName());
 
         if (group.getScheduleMongoId() != null) {

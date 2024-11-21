@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import static com.techstud.scheduleuniversity.kafka.KafkaMessageObserver.registerMessage;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -28,6 +30,7 @@ public class KafkaProducer {
     public UUID sendToParsingQueue(Object objectMessage) {
         UUID id = UUID.randomUUID();
         sendToKafka(id.toString(), parsingTopic, objectMessage);
+        registerMessage(id);
         return id;
     }
 

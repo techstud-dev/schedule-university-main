@@ -1,5 +1,6 @@
 package com.techstud.scheduleuniversity.dto.response.schedule;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,6 +15,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = {"evenWeekSchedule", "oddWeekSchedule"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Schedule implements Serializable {
 
     private Map<String, ScheduleDay> evenWeekSchedule;

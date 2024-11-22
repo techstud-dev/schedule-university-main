@@ -84,7 +84,10 @@ public class ScheduleMapper {
     }
 
     private String formatDate(Date date) {
-        return DATE_FORMATTER.format(date);
+        if (date != null) {
+            return DATE_FORMATTER.format(date);
+        } else
+            return null;
     }
 
     private String getTimeInterval(TimeSheet timeSheet) {

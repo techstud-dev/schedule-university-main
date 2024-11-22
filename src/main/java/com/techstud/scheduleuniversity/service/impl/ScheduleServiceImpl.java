@@ -1,6 +1,5 @@
 package com.techstud.scheduleuniversity.service.impl;
 
-import com.techstud.scheduleuniversity.dao.document.Schedule;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
 import com.techstud.scheduleuniversity.exception.ParserException;
@@ -17,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -38,41 +38,36 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public com.techstud.scheduleuniversity.dto.response.schedule.Schedule importSchedule(ImportDto importDto) {
         log.info("Import schedule for university: {}, group: {}", importDto.getUniversityName(), importDto.getGroupCode());
-        Schedule schedule = null;
+
         var group = universityGroupRepository
                 .findByUniversityShortNameAndGroupCode(importDto.getUniversityName(), importDto.getGroupCode())
-                .orElseThrow(() -> new IllegalArgumentException("Group "+ importDto.getGroupCode() +" not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Group " + importDto.getGroupCode() + " not found"));
 
-        if (group.getScheduleMongoId() != null) {
-            schedule = scheduleRepository
-                    .findById(group.getScheduleMongoId())
-                    .orElse(null);
-        }
-        if (schedule != null) {
-            return scheduleMapper.toResponse(schedule);
-        }
-        Schedule documentSchedule;
-        com.techstud.scheduleuniversity.dto.parser.response.Schedule parserSchedule;
-        com.techstud.scheduleuniversity.dto.response.schedule.Schedule responseSchedule = null;
+        return Optional.ofNullable(group.getScheduleMongoId())
+                .flatMap(scheduleRepository::findById)
+                .map(scheduleMapper::toResponse)
+                .orElseGet(() -> {
+                    log.warn("Not found schedule for group {}. Trying to import schedule from parser", importDto.getGroupCode());
+                    ParsingTask parsingTask = ParsingTask.builder()
+                            .groupId(group.getUniversityGroupId())
+                            .universityName(importDto.getUniversityName())
+                            .build();
 
-            log.warn("Not found schedule for group {}. Trying to import schedule from parser", importDto.getGroupCode());
-            ParsingTask parsingTask = ParsingTask.builder()
-                    .groupId(group.getUniversityGroupId())
-                    .universityName(importDto.getUniversityName())
-                    .build();
-            UUID uuid = kafkaProducer.sendToParsingQueue(parsingTask);
-            try {
-                parserSchedule = messageObserver.waitForParserResponse(uuid);
-                documentSchedule = scheduleRepositoryFacade.cascadeSave(parserSchedule);
-                if (documentSchedule != null) {
-                    group.setScheduleMongoId(documentSchedule.getId());
-                    universityGroupRepository.save(group);
-                    responseSchedule = scheduleMapper.toResponse(documentSchedule);
-                }
-            } catch (ParserResponseTimeoutException | ParserException exception) {
-                log.error("Error waiting response from schedule", exception);
-            }
+                    UUID uuid = kafkaProducer.sendToParsingQueue(parsingTask);
 
-        return responseSchedule;
+                    try {
+                        var parserSchedule = messageObserver.waitForParserResponse(uuid);
+                        var documentSchedule = scheduleRepositoryFacade.cascadeSave(parserSchedule);
+
+                        group.setScheduleMongoId(documentSchedule.getId());
+                        universityGroupRepository.save(group);
+
+                        return scheduleMapper.toResponse(documentSchedule);
+                    } catch (ParserResponseTimeoutException | ParserException exception) {
+                        log.error("Error waiting response from schedule", exception);
+                        return null;
+                    }
+                });
     }
+
 }

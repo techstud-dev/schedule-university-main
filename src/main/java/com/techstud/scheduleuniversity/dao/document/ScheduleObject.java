@@ -1,6 +1,7 @@
 package com.techstud.scheduleuniversity.dao.document;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.techstud.scheduleuniversity.dao.HashableDocument;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,14 +13,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "schedule_object")
 @EqualsAndHashCode(of = {"type", "name", "teacher", "place", "groups"})
-public class ScheduleObject implements Serializable {
+public class ScheduleObject implements Serializable, HashableDocument {
 
     @Id
     @JsonIgnore

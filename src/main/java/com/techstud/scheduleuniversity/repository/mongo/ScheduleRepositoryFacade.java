@@ -1,9 +1,9 @@
 package com.techstud.scheduleuniversity.repository.mongo;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.techstud.scheduleuniversity.dao.HashableDocument;
 import com.techstud.scheduleuniversity.dao.document.Schedule;
 import com.techstud.scheduleuniversity.dao.document.ScheduleDay;
 import com.techstud.scheduleuniversity.dao.document.ScheduleObject;
@@ -15,11 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.DayOfWeek;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -37,188 +37,95 @@ public class ScheduleRepositoryFacade {
     private final TimeSheetRepository timeSheetRepository;
     private final ScheduleObjectMapper scheduleObjectMapper;
     private final TimeSheetMapper timeSheetMapper;
-
     private final MongoTemplate mongoTemplate;
 
-    public Schedule cascadeSave(com.techstud.scheduleuniversity.dto.parser.response.Schedule schedule)
-            throws NoSuchAlgorithmException, JsonProcessingException {
-        Schedule resultAfterSave = new Schedule();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        resultAfterSave.setSnapshotDate(schedule.getSnapshotDate());
-        resultAfterSave.setEvenWeekSchedule(cascadeWeekSave(schedule.getEvenWeekSchedule()));
-        resultAfterSave.setOddWeekSchedule(cascadeWeekSave(schedule.getOddWeekSchedule()));
+    public Schedule cascadeSave(com.techstud.scheduleuniversity.dto.parser.response.Schedule scheduleDto) {
+        try {
+            Schedule schedule = new Schedule();
+            schedule.setSnapshotDate(scheduleDto.getSnapshotDate());
+            schedule.setEvenWeekSchedule(cascadeWeekSave(scheduleDto.getEvenWeekSchedule()));
+            schedule.setOddWeekSchedule(cascadeWeekSave(scheduleDto.getOddWeekSchedule()));
+            computeAndSetHash(schedule);
 
-        resultAfterSave.setHash(computeHash(resultAfterSave));
-
-        Schedule existingSchedule = isScheduleExistInDb(resultAfterSave);
-        if (existingSchedule != null) {
-            return existingSchedule;
+            return findOrSave(schedule, Schedule.class, scheduleRepository);
+        } catch (Exception e) {
+            throw new RuntimeException("Error cascade save schedule", e);
         }
-
-        return scheduleRepository.save(resultAfterSave);
     }
 
-    public Map<DayOfWeek, ScheduleDay> cascadeWeekSave(
-            Map<DayOfWeek, com.techstud.scheduleuniversity.dto.parser.response.ScheduleDay> weekSchedule) {
+    private Map<DayOfWeek, ScheduleDay> cascadeWeekSave(Map<DayOfWeek, com.techstud.scheduleuniversity.dto.parser.response.ScheduleDay> weekSchedule) {
         Map<DayOfWeek, ScheduleDay> result = new LinkedHashMap<>();
-
-        weekSchedule.forEach((dayOfWeek, scheduleDay) -> {
-            try {
-                result.put(dayOfWeek, cascadeDaySave(scheduleDay));
-            } catch (JsonProcessingException | NoSuchAlgorithmException e) {
-                throw new RuntimeException("Error during cascading week save", e);
-            }
+        weekSchedule.forEach((dayOfWeek, scheduleDayDto) -> {
+            ScheduleDay scheduleDay = cascadeDaySave(scheduleDayDto);
+            result.put(dayOfWeek, scheduleDay);
         });
-
         return result;
     }
 
-    public ScheduleDay cascadeDaySave(com.techstud.scheduleuniversity.dto.parser.response.ScheduleDay scheduleDay)
-            throws JsonProcessingException, NoSuchAlgorithmException {
-        ScheduleDay result = new ScheduleDay();
+    private ScheduleDay cascadeDaySave(com.techstud.scheduleuniversity.dto.parser.response.ScheduleDay scheduleDayDto) {
+        try {
+            ScheduleDay scheduleDay = new ScheduleDay();
+            scheduleDay.setDate(scheduleDayDto.getDate());
+            scheduleDay.setLessons(cascadeLessonSave(scheduleDayDto.getLessons()));
+            computeAndSetHash(scheduleDay);
 
-        result.setDate(scheduleDay.getDate());
-        result.setLessons(cascadeLessonSave(scheduleDay.getLessons()));
-
-        result.setHash(computeHash(result));
-
-        ScheduleDay existingScheduleDay = isScheduleDayExistInDb(result);
-        if (existingScheduleDay != null) {
-            return existingScheduleDay;
+            return findOrSave(scheduleDay, ScheduleDay.class, scheduleDayRepository);
+        } catch (Exception e) {
+            throw new RuntimeException("Error cascade save day", e);
         }
-
-        return scheduleDayRepository.save(result);
     }
 
-    public Map<String, List<ScheduleObject>> cascadeLessonSave(
-            Map<com.techstud.scheduleuniversity.dto.parser.response.TimeSheet,
-                    List<com.techstud.scheduleuniversity.dto.parser.response.ScheduleObject>> lessons) {
-        Map<String, List<ScheduleObject>> result = new LinkedHashMap<>();
+    private Map<String, List<ScheduleObject>> cascadeLessonSave(
+            Map<com.techstud.scheduleuniversity.dto.parser.response.TimeSheet, List<com.techstud.scheduleuniversity.dto.parser.response.ScheduleObject>> lessons) {
 
+        Map<String, List<ScheduleObject>> result = new LinkedHashMap<>();
         lessons.forEach((timeSheetDto, scheduleObjectsDto) -> {
             try {
-                TimeSheet documentTimeSheet = timeSheetMapper.toDocument(timeSheetDto);
-                documentTimeSheet.setHash(computeHash(documentTimeSheet));
-
-                TimeSheet existingTimeSheet = isTimeSheetExistInDb(documentTimeSheet);
-                if (existingTimeSheet != null) {
-                    documentTimeSheet = existingTimeSheet;
-                } else {
-                    documentTimeSheet = timeSheetRepository.save(documentTimeSheet);
-                }
+                TimeSheet timeSheet = timeSheetMapper.toDocument(timeSheetDto);
+                computeAndSetHash(timeSheet);
+                timeSheet = findOrSave(timeSheet, TimeSheet.class, timeSheetRepository);
 
                 List<ScheduleObject> savedObjects = scheduleObjectMapper.toDocument(scheduleObjectsDto).stream()
                         .map(scheduleObject -> {
                             try {
-                                scheduleObject.setHash(computeHash(scheduleObject));
-                                ScheduleObject existingScheduleObject = isScheduleObjectExistInDb(scheduleObject);
-                                return existingScheduleObject != null ? existingScheduleObject : scheduleObjectRepository.save(scheduleObject);
-                            } catch (JsonProcessingException | NoSuchAlgorithmException e) {
-                                throw new RuntimeException("Error during saving ScheduleObject", e);
+                                computeAndSetHash(scheduleObject);
+                                return findOrSave(scheduleObject, ScheduleObject.class, scheduleObjectRepository);
+                            } catch (Exception e) {
+                                throw new RuntimeException("Error of save ScheduleObject", e);
                             }
                         })
                         .toList();
 
-                result.put(documentTimeSheet.getId(), savedObjects);
-            } catch (JsonProcessingException | NoSuchAlgorithmException e) {
-                throw new RuntimeException("Error during cascading lesson save", e);
+                result.put(timeSheet.getId(), savedObjects);
+            } catch (Exception e) {
+                throw new RuntimeException("Error of save lessons", e);
             }
         });
-
         return result;
     }
 
-    private ScheduleObject isScheduleObjectExistInDb(ScheduleObject scheduleObject) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("hash").is(scheduleObject.getHash()));
-
-        return mongoTemplate.findOne(query, ScheduleObject.class);
+    private <T extends HashableDocument> T findOrSave(T entity, Class<T> entityClass, MongoRepository<T, String> repository) {
+        T existingEntity = findExistingByHash(entity, entityClass);
+        return existingEntity != null ? existingEntity : repository.save(entity);
     }
 
-    private TimeSheet isTimeSheetExistInDb(TimeSheet timeSheet) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("hash").is(timeSheet.getHash()));
-
-        return mongoTemplate.findOne(query, TimeSheet.class);
+    private <T extends HashableDocument> T findExistingByHash(T entity, Class<T> entityClass) {
+        Query query = new Query(Criteria.where("hash").is(entity.getHash()));
+        return mongoTemplate.findOne(query, entityClass);
     }
 
-    private ScheduleDay isScheduleDayExistInDb(ScheduleDay scheduleDay) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("hash").is(scheduleDay.getHash()));
-
-        return mongoTemplate.findOne(query, ScheduleDay.class);
+    private void computeAndSetHash(HashableDocument entity) throws Exception {
+        String json = objectMapper.writeValueAsString(entity);
+        String hash = computeSHA256Hash(json);
+        entity.setHash(hash);
     }
 
-    private Schedule isScheduleExistInDb(Schedule schedule) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("hash").is(schedule.getHash()));
-
-        return mongoTemplate.findOne(query, Schedule.class);
-    }
-
-    public String computeHash(ScheduleObject scheduleObject) throws JsonProcessingException, NoSuchAlgorithmException {
-        ObjectMapper objectMapper = createObjectMapper();
-
-        ScheduleObject clone = new ScheduleObject();
-        clone.setType(scheduleObject.getType());
-        clone.setName(scheduleObject.getName());
-        clone.setTeacher(scheduleObject.getTeacher());
-        clone.setPlace(scheduleObject.getPlace());
-        clone.setGroups(scheduleObject.getGroups());
-
-        String json = objectMapper.writeValueAsString(clone);
-
-        return computeSHA256Hash(json);
-    }
-
-    public String computeHash(TimeSheet timeSheet) throws JsonProcessingException, NoSuchAlgorithmException {
-        ObjectMapper objectMapper = createObjectMapper();
-
-        TimeSheet clone = new TimeSheet();
-        clone.setFrom(timeSheet.getFrom());
-        clone.setTo(timeSheet.getTo());
-
-        String json = objectMapper.writeValueAsString(clone);
-
-        return computeSHA256Hash(json);
-    }
-
-    public String computeHash(ScheduleDay scheduleDay) throws JsonProcessingException, NoSuchAlgorithmException {
-        ObjectMapper objectMapper = createObjectMapper();
-
-        ScheduleDay clone = new ScheduleDay();
-        clone.setDate(scheduleDay.getDate());
-        clone.setLessons(scheduleDay.getLessons());
-
-        String json = objectMapper.writeValueAsString(clone);
-
-        return computeSHA256Hash(json);
-    }
-
-    public String computeHash(Schedule schedule) throws JsonProcessingException, NoSuchAlgorithmException {
-        ObjectMapper objectMapper = createObjectMapper();
-
-        Schedule clone = new Schedule();
-        clone.setEvenWeekSchedule(schedule.getEvenWeekSchedule());
-        clone.setOddWeekSchedule(schedule.getOddWeekSchedule());
-        clone.setSnapshotDate(schedule.getSnapshotDate());
-
-        String json = objectMapper.writeValueAsString(clone);
-
-        return computeSHA256Hash(json);
-    }
-
-    private ObjectMapper createObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper()
-                .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        objectMapper.registerModule(new JavaTimeModule());
-
-        return objectMapper;
-    }
-
-    private String computeSHA256Hash(String input) throws NoSuchAlgorithmException {
+    private String computeSHA256Hash(String input) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
         return Base64.getEncoder().encodeToString(hashBytes);

@@ -1,6 +1,7 @@
 package com.techstud.scheduleuniversity.dao.document;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.techstud.scheduleuniversity.dao.HashableDocument;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,7 +20,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Document(collection = "schedule")
 @EqualsAndHashCode(of = {"evenWeekSchedule", "oddWeekSchedule"})
-public class Schedule implements Serializable {
+public class Schedule implements Serializable, HashableDocument {
 
     @Id
     @JsonIgnore

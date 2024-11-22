@@ -1,6 +1,7 @@
 package com.techstud.scheduleuniversity.dao.document;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.techstud.scheduleuniversity.dao.HashableDocument;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -14,7 +15,7 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @Document(collection = "time_sheet")
 @EqualsAndHashCode(of = {"from", "to"})
-public class TimeSheet implements Serializable {
+public class TimeSheet implements Serializable, HashableDocument {
 
     @Id
     @JsonIgnore

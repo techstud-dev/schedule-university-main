@@ -1,5 +1,6 @@
 package com.techstud.scheduleuniversity.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.techstud.scheduleuniversity.dao.document.Schedule;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 @Service
@@ -61,7 +63,8 @@ public class ScheduleServiceImpl implements ScheduleService {
                     group.setScheduleMongoId(schedule.getId());
                     universityGroupRepository.save(group);
                 }
-            } catch (ParserResponseTimeoutException | ParserException exception) {
+            } catch (ParserResponseTimeoutException | ParserException | NoSuchAlgorithmException |
+                     JsonProcessingException exception) {
                 log.error("Error waiting response from schedule", exception);
             }
         }

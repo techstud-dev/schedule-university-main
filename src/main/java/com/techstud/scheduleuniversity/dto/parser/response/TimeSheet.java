@@ -1,9 +1,6 @@
 package com.techstud.scheduleuniversity.dto.parser.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 import java.time.LocalTime;
@@ -12,6 +9,7 @@ import java.time.LocalTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@EqualsAndHashCode(of = {"from", "to"})
 public class TimeSheet implements Serializable {
 
     private LocalTime from;

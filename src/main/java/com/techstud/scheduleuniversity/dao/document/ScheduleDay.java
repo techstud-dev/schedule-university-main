@@ -1,11 +1,14 @@
 package com.techstud.scheduleuniversity.dao.document;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.techstud.scheduleuniversity.util.TimeSheetKeyDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,13 +19,17 @@ import java.util.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Document(collection = "schedule_day")
+@EqualsAndHashCode(of = {"date", "lessons"})
 public class ScheduleDay implements Serializable {
 
     @Id
+    @JsonIgnore
     private String id;
 
     private Date date;
 
     private Map<String, List<ScheduleObject>> lessons = new LinkedHashMap<>();
 
+    @Indexed(unique = true)
+    private String hash;
 }

@@ -2,7 +2,7 @@ package com.techstud.scheduleuniversity.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.techstud.scheduleuniversity.dao.document.Schedule;
+import com.techstud.scheduleuniversity.dto.parser.response.Schedule;
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
 import lombok.extern.slf4j.Slf4j;

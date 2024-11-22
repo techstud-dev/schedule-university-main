@@ -8,10 +8,7 @@ import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
 import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
 import com.techstud.scheduleuniversity.repository.jpa.UniversityGroupRepository;
-import com.techstud.scheduleuniversity.repository.mongo.ScheduleDayRepository;
-import com.techstud.scheduleuniversity.repository.mongo.ScheduleObjectRepository;
-import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepository;
-import com.techstud.scheduleuniversity.repository.mongo.TimeSheetRepository;
+import com.techstud.scheduleuniversity.repository.mongo.*;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +29,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final ScheduleDayRepository scheduleDayRepository;
     private final TimeSheetRepository timeSheetRepository;
     private final ScheduleObjectRepository scheduleObjectRepository;
+    private final ScheduleRepositoryFacade scheduleRepositoryFacade;
     private final KafkaProducer kafkaProducer;
     private final KafkaMessageObserver messageObserver;
 
@@ -58,15 +56,13 @@ public class ScheduleServiceImpl implements ScheduleService {
                     .build();
             UUID uuid = kafkaProducer.sendToParsingQueue(parsingTask);
             try {
-                schedule = messageObserver.waitForParserResponse(uuid);
+                schedule = scheduleRepositoryFacade.cascadeSave(messageObserver.waitForParserResponse(uuid));
+                if (schedule != null) {
+                    group.setScheduleMongoId(schedule.getId());
+                    universityGroupRepository.save(group);
+                }
             } catch (ParserResponseTimeoutException | ParserException exception) {
                 log.error("Error waiting response from schedule", exception);
-            }
-            if (schedule != null) {
-                //TODO: realise cascade save mongo objects
-                Schedule scheduleSaved = scheduleRepository.save(schedule);
-                group.setScheduleMongoId(scheduleSaved.getId());
-                universityGroupRepository.save(group);
             }
         }
         return schedule;

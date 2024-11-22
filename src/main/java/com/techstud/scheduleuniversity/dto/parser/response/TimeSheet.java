@@ -1,11 +1,9 @@
-package com.techstud.scheduleuniversity.dao.document;
+package com.techstud.scheduleuniversity.dto.parser.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
 import java.time.LocalTime;
@@ -13,11 +11,8 @@ import java.time.LocalTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "time_sheet")
+@Builder
 public class TimeSheet implements Serializable {
-
-    @Id
-    private String id;
 
     private LocalTime from;
 

@@ -19,12 +19,10 @@ import java.util.*;
 public class ScheduleDay implements Serializable {
 
     @Id
-    private String id = UUID.randomUUID().toString();
+    private String id;
 
     private Date date;
 
-    @DBRef
-    @JsonDeserialize(keyUsing = TimeSheetKeyDeserializer.class)
-    private Map<TimeSheet, List<ScheduleObject>> lessons = new LinkedHashMap<>();
+    private Map<String, List<ScheduleObject>> lessons = new LinkedHashMap<>();
 
 }

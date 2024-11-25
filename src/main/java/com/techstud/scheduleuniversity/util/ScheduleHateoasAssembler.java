@@ -21,6 +21,8 @@ public class ScheduleHateoasAssembler {
         scheduleModel.add(linkTo(methodOn(ScheduleController.class).updateSchedule(scheduleDocument.getId(), null)).withRel("update"));
         scheduleModel.add(linkTo(methodOn(ScheduleController.class).deleteSchedule(scheduleDocument.getId())).withRel("delete"));
 
+        //FIXME: Продумать все ссылки, которые будут уходить на UI
+
         if (schedule.getEvenWeekSchedule() != null) {
             schedule.setEvenWeekSchedule(createScheduleDayModels(schedule.getEvenWeekSchedule(), scheduleDocument.getId(), "evenWeek"));
         }

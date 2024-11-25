@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ScheduleDayRepository extends MongoRepository<ScheduleDay, String> {
 
+
 }

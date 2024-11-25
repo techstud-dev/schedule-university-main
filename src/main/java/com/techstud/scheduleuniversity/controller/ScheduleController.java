@@ -1,9 +1,11 @@
 package com.techstud.scheduleuniversity.controller;
 
-import com.techstud.scheduleuniversity.dao.document.Schedule;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.ImportDto;
+import com.techstud.scheduleuniversity.dto.response.schedule.Schedule;
+import com.techstud.scheduleuniversity.exception.RequestException;
 import com.techstud.scheduleuniversity.service.ScheduleService;
+import com.techstud.scheduleuniversity.validation.RequestValidationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.hateoas.EntityModel;
@@ -17,10 +19,14 @@ import org.springframework.web.bind.annotation.*;
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
+    private final RequestValidationService requestValidationService;
 
     @PostMapping("/import")
-    public EntityModel<Schedule> importSchedule(@RequestBody ApiRequest<ImportDto> importRequest) {
-     throw new UnsupportedOperationException("Not implemented yet");
+    public EntityModel<Schedule> importSchedule(@RequestBody ApiRequest<ImportDto> importRequest) throws RequestException {
+        log.info("Incoming request to import schedule, body: {}", importRequest);
+        requestValidationService.validateImportRequest(importRequest);
+        Schedule schedule = scheduleService.importSchedule(importRequest.getData());
+     return EntityModel.of(schedule);
     }
 
     @GetMapping("/scene")

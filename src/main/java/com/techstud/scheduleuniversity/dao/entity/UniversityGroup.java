@@ -19,12 +19,17 @@ public class UniversityGroup {
     @SequenceGenerator(name = "university_group_id_seq", sequenceName = "university_group_id_seq", allocationSize = 1)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "university_id")
-    @Fetch(FetchMode.JOIN)
     private University university;
+
+    @Column(name = "university_group_id")
     private String universityGroupId;
+
+    @Column(name = "group_code")
     private String groupCode;
-    private String scheduleMonoDbId;
+
+    @Column(name = "schedule_mongo_id")
+    private String scheduleMongoId;
 
 }

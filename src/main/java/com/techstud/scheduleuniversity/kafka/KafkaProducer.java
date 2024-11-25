@@ -22,11 +22,16 @@ public class KafkaProducer {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
 
+    private final KafkaMessageObserver messageObserver;
+
     @Value("${kafka.topic.parsing-queue}")
     private String parsingTopic;
 
-    public void sendToParsingQueue(String id, Object objectMessage) {
-        sendToKafka(id, parsingTopic, objectMessage);
+    public UUID sendToParsingQueue(Object objectMessage) {
+        UUID id = UUID.randomUUID();
+        sendToKafka(id.toString(), parsingTopic, objectMessage);
+        messageObserver.registerMessage(id);
+        return id;
     }
 
 

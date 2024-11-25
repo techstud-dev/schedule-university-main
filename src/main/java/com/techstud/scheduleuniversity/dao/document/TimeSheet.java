@@ -1,10 +1,10 @@
 package com.techstud.scheduleuniversity.dao.document;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.techstud.scheduleuniversity.dao.HashableDocument;
+import lombok.*;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
@@ -13,15 +13,23 @@ import java.time.LocalTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 @Document(collection = "time_sheet")
-public class TimeSheet implements Serializable {
+@EqualsAndHashCode(of = {"from", "to"})
+public class TimeSheet implements Serializable, HashableDocument {
 
     @Id
+    @JsonIgnore
     private String id;
 
     private LocalTime from;
 
     private LocalTime to;
 
+    @Indexed(unique = true)
+    private String hash;
+
+    @Override
+    public String toString() {
+        return "TimeSheet(from=" + from + ", to=" + to + ")";
+    }
 }

@@ -1,17 +1,15 @@
 package com.techstud.scheduleuniversity.dto;
 
+import com.google.gson.Gson;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@Data
+@Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -98,5 +96,10 @@ public class ApiRequest<T> implements Serializable {
                 example = "asc",
                 type = "string")
         private String order = "asc";
+    }
+
+    @Override
+    public String toString() {
+        return new Gson().toJson(this);
     }
 }

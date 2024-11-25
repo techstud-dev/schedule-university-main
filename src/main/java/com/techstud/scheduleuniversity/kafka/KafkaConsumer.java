@@ -9,6 +9,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -16,6 +17,7 @@ import java.util.Map;
 public class KafkaConsumer {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private final KafkaMessageObserver messageObserver;
 
     @KafkaListener(topics = "#{'${kafka.topic.parsing-result}'}", concurrency = "${spring.kafka.listener.concurrency}",
             autoStartup = "true", groupId = "parser_group")
@@ -23,6 +25,7 @@ public class KafkaConsumer {
         String id = consumerRecord.key();
         String message = consumerRecord.value();
         log.info("Received message with id: {}, message:\n{}", id, message);
+        messageObserver.registerResponse(UUID.fromString(id), message);
     }
 
     @KafkaListener(topics = "#{'${kafka.topic.parsing-failure}'}", concurrency = "${spring.kafka.listener.concurrency}",
@@ -30,6 +33,6 @@ public class KafkaConsumer {
     public void listenParsingFailure(ConsumerRecord<String, String> consumerRecord) throws JsonProcessingException {
         String id = consumerRecord.key();
         String message = consumerRecord.value();
-        Map messageMap = objectMapper.readValue(message, Map.class);
+        messageObserver.registerResponse(UUID.fromString(id), message);
     }
 }

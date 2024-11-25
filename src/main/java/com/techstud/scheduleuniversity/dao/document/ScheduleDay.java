@@ -1,30 +1,33 @@
 package com.techstud.scheduleuniversity.dao.document;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.techstud.scheduleuniversity.dao.HashableDocument;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Document(collection = "schedule_day")
-public class ScheduleDay implements Serializable {
+@EqualsAndHashCode(of = {"date", "lessons"})
+public class ScheduleDay implements Serializable, HashableDocument {
 
     @Id
+    @JsonIgnore
     private String id;
 
     private Date date;
 
-    @DBRef
-    private Map<TimeSheet, List<ScheduleObject>> lessons = new LinkedHashMap<>();
+    private Map<String, List<ScheduleObject>> lessons = new LinkedHashMap<>();
 
+    @Indexed(unique = true)
+    private String hash;
 }

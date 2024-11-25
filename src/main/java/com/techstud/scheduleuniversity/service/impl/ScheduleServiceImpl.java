@@ -1,5 +1,6 @@
 package com.techstud.scheduleuniversity.service.impl;
 
+import com.techstud.scheduleuniversity.dao.document.Schedule;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
 import com.techstud.scheduleuniversity.exception.ParserException;
@@ -36,7 +37,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public com.techstud.scheduleuniversity.dto.response.schedule.Schedule importSchedule(ImportDto importDto) {
+    public Schedule importSchedule(ImportDto importDto) {
         log.info("Import schedule for university: {}, group: {}", importDto.getUniversityName(), importDto.getGroupCode());
 
         var group = universityGroupRepository
@@ -45,7 +46,6 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         return Optional.ofNullable(group.getScheduleMongoId())
                 .flatMap(scheduleRepository::findById)
-                .map(scheduleMapper::toResponse)
                 .orElseGet(() -> {
                     log.warn("Not found schedule for group {}. Trying to import schedule from parser", importDto.getGroupCode());
                     ParsingTask parsingTask = ParsingTask.builder()
@@ -57,12 +57,12 @@ public class ScheduleServiceImpl implements ScheduleService {
 
                     try {
                         var parserSchedule = messageObserver.waitForParserResponse(uuid);
-                        var documentSchedule = scheduleRepositoryFacade.cascadeSave(parserSchedule);
+                        Schedule documentSchedule = scheduleRepositoryFacade.cascadeSave(parserSchedule);
 
                         group.setScheduleMongoId(documentSchedule.getId());
                         universityGroupRepository.save(group);
 
-                        return scheduleMapper.toResponse(documentSchedule);
+                        return documentSchedule;
                     } catch (ParserResponseTimeoutException | ParserException exception) {
                         log.error("Error waiting response from schedule", exception);
                         return null;

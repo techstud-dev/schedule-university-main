@@ -1,6 +1,6 @@
 package com.techstud.scheduleuniversity.mapper;
 
-import com.techstud.scheduleuniversity.dao.document.TimeSheet;
+import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheet;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 

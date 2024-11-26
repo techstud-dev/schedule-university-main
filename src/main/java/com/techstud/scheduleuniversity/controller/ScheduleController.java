@@ -14,8 +14,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -29,10 +33,11 @@ public class ScheduleController {
     private final ScheduleMapper scheduleMapper;
 
     @PostMapping("/import")
-    public EntityModel<Schedule> importSchedule(@RequestBody ApiRequest<ImportDto> importRequest) throws RequestException {
-        log.info("Incoming request to import schedule, body: {}", importRequest);
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<Schedule> importSchedule(@RequestBody ApiRequest<ImportDto> importRequest, Principal principal) throws RequestException {
+        log.info("Incoming request to import schedule, body: {}, user: {}", importRequest, principal.getName());
         requestValidationService.validateImportRequest(importRequest);
-        com.techstud.scheduleuniversity.dao.document.Schedule documentSchedule = scheduleService.importSchedule(importRequest.getData());
+        com.techstud.scheduleuniversity.dao.document.schedule.Schedule documentSchedule = scheduleService.importSchedule(importRequest.getData(), principal.getName());
         Schedule schedule = scheduleMapper.toResponse(documentSchedule);
      return ScheduleHateoasAssembler.toModel(schedule, documentSchedule);
     }

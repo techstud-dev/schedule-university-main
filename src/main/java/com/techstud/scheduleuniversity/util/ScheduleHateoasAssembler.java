@@ -13,7 +13,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 public class ScheduleHateoasAssembler {
 
-    public static EntityModel<Schedule> toModel(Schedule schedule, com.techstud.scheduleuniversity.dao.document.Schedule scheduleDocument) {
+    public static EntityModel<Schedule> toModel(Schedule schedule, com.techstud.scheduleuniversity.dao.document.schedule.Schedule scheduleDocument) {
 
         EntityModel<Schedule> scheduleModel = EntityModel.of(schedule);
 

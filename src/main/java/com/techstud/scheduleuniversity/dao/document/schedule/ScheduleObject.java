@@ -1,4 +1,4 @@
-package com.techstud.scheduleuniversity.dao.document;
+package com.techstud.scheduleuniversity.dao.document.schedule;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.techstud.scheduleuniversity.dao.HashableDocument;
@@ -11,23 +11,27 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "schedule_day")
-@EqualsAndHashCode(of = {"date", "lessons"})
-public class ScheduleDay implements Serializable, HashableDocument {
+@AllArgsConstructor
+@Document(collection = "schedule_object")
+@EqualsAndHashCode(of = {"type", "name", "teacher", "place", "groups"})
+public class ScheduleObject implements Serializable, HashableDocument {
 
     @Id
     @JsonIgnore
     private String id;
 
-    private Date date;
-
-    private Map<String, List<ScheduleObject>> lessons = new LinkedHashMap<>();
+    private ScheduleType type;
+    private String name;
+    private String teacher;
+    private String place;
+    private List<String> groups = new ArrayList<>();
 
     @Indexed(unique = true)
     private String hash;
+
 }

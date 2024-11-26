@@ -1,4 +1,4 @@
-package com.techstud.scheduleuniversity.dao.document;
+package com.techstud.scheduleuniversity.dao.document.schedule;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.techstud.scheduleuniversity.dao.HashableDocument;

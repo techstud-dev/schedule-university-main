@@ -1,4 +1,4 @@
-package com.techstud.scheduleuniversity.dao.document;
+package com.techstud.scheduleuniversity.dao.document.schedule;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Aspect
 @Component
+@SuppressWarnings("deprecation")
 public class RateLimitAspect {
 
     private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();

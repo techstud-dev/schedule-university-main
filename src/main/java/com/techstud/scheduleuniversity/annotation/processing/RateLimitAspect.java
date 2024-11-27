@@ -50,17 +50,12 @@ public class RateLimitAspect {
     }
 
     private Duration getDuration(long period, String periodUnit) {
-        switch (periodUnit.toUpperCase()) {
-            case "SECONDS":
-                return Duration.ofSeconds(period);
-            case "MINUTES":
-                return Duration.ofMinutes(period);
-            case "HOURS":
-                return Duration.ofHours(period);
-            case "DAYS":
-                return Duration.ofDays(period);
-            default:
-                throw new IllegalArgumentException("Unsupported period unit: " + periodUnit);
-        }
+        return switch (periodUnit.toUpperCase()) {
+            case "SECONDS" -> Duration.ofSeconds(period);
+            case "MINUTES" -> Duration.ofMinutes(period);
+            case "HOURS" -> Duration.ofHours(period);
+            case "DAYS" -> Duration.ofDays(period);
+            default -> throw new IllegalArgumentException("Unsupported period unit: " + periodUnit);
+        };
     }
 }

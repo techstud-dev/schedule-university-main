@@ -1,7 +1,7 @@
 package com.techstud.scheduleuniversity.mapper;
 
-import com.techstud.scheduleuniversity.dao.document.ScheduleDay;
-import com.techstud.scheduleuniversity.dao.document.TimeSheet;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDay;
+import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheet;
 import com.techstud.scheduleuniversity.dto.response.schedule.Schedule;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObject;
 import com.techstud.scheduleuniversity.repository.mongo.TimeSheetRepository;
@@ -32,7 +32,7 @@ public class ScheduleMapper {
     private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    public Schedule toResponse(com.techstud.scheduleuniversity.dao.document.Schedule documentSchedule) {
+    public Schedule toResponse(com.techstud.scheduleuniversity.dao.document.schedule.Schedule documentSchedule) {
         return new Schedule(
                 mapDocumentWeek(documentSchedule.getEvenWeekSchedule()),
                 mapDocumentWeek(documentSchedule.getOddWeekSchedule()),
@@ -55,7 +55,7 @@ public class ScheduleMapper {
         );
     }
 
-    private Map<String, List<ScheduleObject>> mapDocumentLessons(Map<String, List<com.techstud.scheduleuniversity.dao.document.ScheduleObject>> documentLessons) {
+    private Map<String, List<ScheduleObject>> mapDocumentLessons(Map<String, List<com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObject>> documentLessons) {
         Map<String, List<ScheduleObject>> response = new LinkedHashMap<>();
         documentLessons.forEach((key, value) ->
                 timeSheetRepository.findById(key).ifPresent(timeSheet ->
@@ -65,7 +65,7 @@ public class ScheduleMapper {
         return response;
     }
 
-    private List<ScheduleObject> mapDocumentObjects(List<com.techstud.scheduleuniversity.dao.document.ScheduleObject> documentObjects) {
+    private List<ScheduleObject> mapDocumentObjects(List<com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObject> documentObjects) {
         List<ScheduleObject> response = new ArrayList<>();
         for (var documentObject : documentObjects) {
             response.add(new ScheduleObject(

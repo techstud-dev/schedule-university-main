@@ -1,7 +1,7 @@
 package com.techstud.scheduleuniversity.mapper;
 
-import com.techstud.scheduleuniversity.dao.document.ScheduleObject;
-import com.techstud.scheduleuniversity.dao.document.ScheduleType;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObject;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleType;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 

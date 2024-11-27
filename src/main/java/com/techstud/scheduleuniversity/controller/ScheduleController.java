@@ -9,22 +9,31 @@ import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObjectApiRe
 import com.techstud.scheduleuniversity.exception.RequestException;
 import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.service.ScheduleService;
-import com.techstud.scheduleuniversity.util.ScheduleHateoasAssembler;
+import com.techstud.scheduleuniversity.swagger.ApiRequestImportDto;
 import com.techstud.scheduleuniversity.validation.RequestValidationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/schedule")
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("unused")
+@Tag(name = "Schedule", description = "API для работы с расписанием")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
@@ -33,55 +42,127 @@ public class ScheduleController {
 
     @PostMapping("/import")
     @PreAuthorize("hasRole('USER')")
-    public EntityModel<ScheduleApiResponse> importSchedule(@RequestBody ApiRequest<ImportDto> importRequest, Principal principal) throws RequestException {
+    @Operation(
+            summary = "Запрос на импорт расписания",
+            description = "Если в БД существует расписание для указанной группы, то оно вернется. " +
+                    "Иначе будет произведен запрос на парсинг расписания и сохранение в БД, после привязки к пользователею, совершившего запрос.",
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            description = "Успешный импорт расписания",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class))),
+                    @ApiResponse(responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = "{" +
+                                            "\n  \"systemName\": \"tchs\",\n " +
+                                            "\n  \"applicationName\": \"schedule-university-main\",\n " +
+                                            "\n  \"message\": \"Unauthorized\"\n}"))),}
+    )
+    public EntityModel<ScheduleApiResponse> importSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Данные для импорта расписания",
+            required = true,
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ApiRequestImportDto.class)))
+                                                           @RequestBody ApiRequest<ImportDto> importRequest,
+                                                           @Parameter(hidden = true) Principal principal) throws RequestException {
         log.info("Incoming request to import schedule, body: {}, user: {}", importRequest, principal.getName());
         requestValidationService.validateImportRequest(importRequest);
         ScheduleDocument documentSchedule =
                 scheduleService.importSchedule(importRequest.getData(), principal.getName());
         ScheduleApiResponse schedule = scheduleMapper.toResponse(documentSchedule);
-     return ScheduleHateoasAssembler.toModel(schedule, documentSchedule);
+        return EntityModel.of(schedule);
     }
 
     @GetMapping("/{scheduleId}")
-    public EntityModel<ScheduleApiResponse> getSchedule(@PathVariable String scheduleId) {
-     throw new UnsupportedOperationException("Not implemented yet");
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<ScheduleApiResponse> getSchedule(@PathVariable String scheduleId,
+                                                        @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<ScheduleApiResponse> createSchedule(@RequestBody ApiRequest<Object> saveObject,
+                                                           @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @PutMapping("/{scheduleId}")
-    public EntityModel<ScheduleApiResponse> updateSchedule(@PathVariable String scheduleId, @RequestBody ApiRequest<ImportDto> importRequest) {
-     throw new UnsupportedOperationException("Not implemented yet");
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<ScheduleApiResponse> updateSchedule(@PathVariable String scheduleId,
+                                                           @RequestBody ApiRequest<Object> updateObject,
+                                                           @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @DeleteMapping("/{scheduleId}")
-    public EntityModel<ScheduleApiResponse> deleteSchedule(@PathVariable String scheduleId) {
-     throw new UnsupportedOperationException("Not implemented yet");
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<Void> deleteSchedule(@PathVariable String scheduleId,
+                                            Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @GetMapping("/{scheduleId}/day/{weekType}/{day}")
-    public EntityModel<ScheduleDayApiResponse> getScheduleDay(@PathVariable String scheduleId, @PathVariable String weekType, @PathVariable String day) {
-     throw new UnsupportedOperationException("Not implemented yet");
+    @GetMapping("/scheduleDay/{scheduleDayId}")
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<ScheduleDayApiResponse> getScheduleDay(@PathVariable String scheduleDayId,
+                                                              @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @GetMapping("/{scheduleId}/day/{weekType}/{day}/lesson/{time}")
-    public EntityModel<List<ScheduleObjectApiResponse>> getLesson(@PathVariable String scheduleId, @PathVariable String weekType, @PathVariable String day, @PathVariable String time) {
-     throw new UnsupportedOperationException("Not implemented yet");
+    @PostMapping("/scheduleDay/")
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<ScheduleDayApiResponse> createScheduleDay(@RequestBody ApiRequest<Object> saveObject,
+                                                                 @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-
-    @GetMapping("/scene")
-    public ResponseEntity<Object> getScene() {
-     throw new UnsupportedOperationException("Not implemented yet");
+    @PutMapping("/scheduleDay/{scheduleDayId}")
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<ScheduleDayApiResponse> updateScheduleDay(@PathVariable String scheduleDayId,
+                                                                 @RequestBody ApiRequest<Object> updateObject,
+                                                                 @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @PostMapping("/scheduleObject/create")
-    public ResponseEntity<Object> createScheduleObject() {
-     throw new UnsupportedOperationException("Not implemented yet");
+    @DeleteMapping("/scheduleDay/{scheduleDayId}")
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<Void> deleteScheduleDay(@PathVariable String scheduleDayId,
+                                               @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @PostMapping("/scheduleDay/create")
-    public ResponseEntity<Object> createScheduleDay() {
-     throw new UnsupportedOperationException("Not implemented yet");
+    @GetMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<List<ScheduleObjectApiResponse>> getLesson(@PathVariable String scheduleDayId,
+                                                                  @PathVariable String timeWindow,
+                                                                  @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    //TODO: Add more api
+    @PostMapping("/scheduleDay/lesson/")
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<List<ScheduleObjectApiResponse>> saveLesson(@RequestBody ApiRequest<Object> saveObject,
+                                                                   @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @PutMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<List<ScheduleObjectApiResponse>> updateLesson(@PathVariable String scheduleDayId,
+                                                                     @PathVariable String timeWindow,
+                                                                     @RequestBody ApiRequest<Object> updateObject,
+                                                                     @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @DeleteMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
+    @PreAuthorize("hasRole('USER')")
+    public EntityModel<Void> deleteLesson(@PathVariable String scheduleDayId,
+                                          @PathVariable String timeWindow,
+                                          @Parameter(hidden = true) Principal principal) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
 }

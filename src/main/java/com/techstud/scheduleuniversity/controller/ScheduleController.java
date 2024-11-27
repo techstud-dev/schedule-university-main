@@ -1,5 +1,6 @@
 package com.techstud.scheduleuniversity.controller;
 
+import com.techstud.scheduleuniversity.annotation.RateLimit;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.ImportDto;
@@ -55,11 +56,16 @@ public class ScheduleController {
                             description = "Неавторизован",
                             content = @Content(mediaType = "application/json",
                                     schema = @Schema(implementation = Map.class),
-                                    examples = @ExampleObject(value = "{" +
-                                            "\n  \"systemName\": \"tchs\",\n " +
-                                            "\n  \"applicationName\": \"schedule-university-main\",\n " +
-                                            "\n  \"message\": \"Unauthorized\"\n}"))),}
+                                    examples = @ExampleObject(value = """
+                                            {\
+                                              "systemName": "tchs",
+                                             \
+                                              "applicationName": "schedule-university-main",
+                                             \
+                                              "message": "Unauthorized"
+                                            }"""))),}
     )
+    @RateLimit(capacity = 1000, refillTokens = 1000, refillPeriod = 1, periodUnit = "MINUTES")
     public EntityModel<ScheduleApiResponse> importSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Данные для импорта расписания",
             required = true,

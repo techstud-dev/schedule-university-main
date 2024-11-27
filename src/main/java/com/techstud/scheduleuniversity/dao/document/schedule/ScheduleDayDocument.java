@@ -18,7 +18,7 @@ import java.util.*;
 @NoArgsConstructor
 @Document(collection = "schedule_day")
 @EqualsAndHashCode(of = {"date", "lessons"})
-public class ScheduleDay implements Serializable, HashableDocument {
+public class ScheduleDayDocument implements Serializable, HashableDocument {
 
     @Id
     @JsonIgnore
@@ -26,7 +26,7 @@ public class ScheduleDay implements Serializable, HashableDocument {
 
     private Date date;
 
-    private Map<String, List<ScheduleObject>> lessons = new LinkedHashMap<>();
+    private Map<String, List<ScheduleObjectDocument>> lessons = new LinkedHashMap<>();
 
     @Indexed(unique = true)
     private String hash;

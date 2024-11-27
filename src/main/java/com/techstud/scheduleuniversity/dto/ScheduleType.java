@@ -1,4 +1,4 @@
-package com.techstud.scheduleuniversity.dto.response.schedule;
+package com.techstud.scheduleuniversity.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

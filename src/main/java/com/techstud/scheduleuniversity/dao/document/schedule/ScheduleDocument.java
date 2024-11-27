@@ -11,27 +11,27 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.DayOfWeek;
+import java.util.Date;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "schedule_object")
-@EqualsAndHashCode(of = {"type", "name", "teacher", "place", "groups"})
-public class ScheduleObject implements Serializable, HashableDocument {
+@Document(collection = "schedule")
+@EqualsAndHashCode(of = {"evenWeekSchedule", "oddWeekSchedule"})
+public class ScheduleDocument implements Serializable, HashableDocument {
 
     @Id
     @JsonIgnore
     private String id;
 
-    private ScheduleType type;
-    private String name;
-    private String teacher;
-    private String place;
-    private List<String> groups = new ArrayList<>();
+    private Map<DayOfWeek, ScheduleDayDocument> evenWeekSchedule;
+
+    private Map<DayOfWeek, ScheduleDayDocument> oddWeekSchedule;
+
+    private Date snapshotDate = new Date();
 
     @Indexed(unique = true)
     private String hash;
-
 }

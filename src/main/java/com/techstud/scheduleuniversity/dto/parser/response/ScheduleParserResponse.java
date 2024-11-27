@@ -14,11 +14,11 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = {"evenWeekSchedule", "oddWeekSchedule"})
-public class Schedule implements Serializable {
+public class ScheduleParserResponse implements Serializable {
 
-    private Map<DayOfWeek, ScheduleDay> evenWeekSchedule;
+    private Map<DayOfWeek, ScheduleDayParserResponse> evenWeekSchedule;
 
-    private Map<DayOfWeek, ScheduleDay> oddWeekSchedule;
+    private Map<DayOfWeek, ScheduleDayParserResponse> oddWeekSchedule;
 
     private Date snapshotDate = new Date();
 

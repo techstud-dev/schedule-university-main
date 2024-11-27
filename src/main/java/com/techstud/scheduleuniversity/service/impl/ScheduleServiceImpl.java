@@ -1,6 +1,6 @@
 package com.techstud.scheduleuniversity.service.impl;
 
-import com.techstud.scheduleuniversity.dao.document.schedule.Schedule;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dao.entity.Student;
 import com.techstud.scheduleuniversity.dao.entity.UniversityGroup;
 import com.techstud.scheduleuniversity.dto.ImportDto;
@@ -9,7 +9,6 @@ import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
 import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
-import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.repository.jpa.StudentRepository;
 import com.techstud.scheduleuniversity.repository.jpa.UniversityGroupRepository;
 import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepository;
@@ -36,8 +35,10 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Transactional
-    public Schedule importSchedule(ImportDto importDto, String username) {
+    public ScheduleDocument importSchedule(ImportDto importDto, String username) {
         log.info("Importing schedule for university: {}, group: {}", importDto.getUniversityName(), importDto.getGroupCode());
+
+        ScheduleDocument scheduleDocument = null;
 
         Student student = studentRepository.findByUsername(username)
                 .orElseGet(() -> studentRepository.save(new Student(username)));
@@ -47,17 +48,13 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .orElseThrow(() -> new IllegalArgumentException("Group " + importDto.getGroupCode() + " not found"));
 
         if (student.getScheduleMongoId() != null) {
-            return scheduleRepository.findById(student.getScheduleMongoId())
-                    .orElseThrow(() -> new IllegalArgumentException("Schedule not found for student"));
+            scheduleDocument = scheduleRepository.findById(student.getScheduleMongoId())
+                    .orElse(null);
         }
 
-        if (group.getScheduleMongoId() != null) {
-
-            student.setScheduleMongoId(group.getScheduleMongoId());
-            studentRepository.save(student);
-
-            return scheduleRepository.findById(group.getScheduleMongoId())
-                    .orElseThrow(() -> new IllegalArgumentException("Schedule not found for group"));
+        if (scheduleDocument != null) {
+            log.info("Schedule found for group {}. Returning existing schedule.", importDto.getGroupCode());
+            return scheduleDocument;
         }
 
         log.warn("Schedule not found for group {}. Attempting to import from parser.", importDto.getGroupCode());
@@ -65,7 +62,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
 
-    private Schedule fetchAndSaveSchedule(UniversityGroup group, Student student) {
+    private ScheduleDocument fetchAndSaveSchedule(UniversityGroup group, Student student) {
         ParsingTask parsingTask = ParsingTask.builder()
                 .groupId(group.getUniversityGroupId())
                 .universityName(group.getUniversity().getShortName())
@@ -75,7 +72,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         try {
             var parserSchedule = messageObserver.waitForParserResponse(uuid);
-            Schedule savedSchedule = scheduleRepositoryFacade.cascadeSave(parserSchedule);
+            ScheduleDocument savedSchedule = scheduleRepositoryFacade.cascadeSave(parserSchedule);
             student.setScheduleMongoId(savedSchedule.getId());
             studentRepository.save(student);
             return savedSchedule;

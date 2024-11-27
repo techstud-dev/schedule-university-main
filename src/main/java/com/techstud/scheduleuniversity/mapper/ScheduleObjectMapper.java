@@ -1,7 +1,8 @@
 package com.techstud.scheduleuniversity.mapper;
 
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObject;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleType;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleObjectParserResponse;
+import com.techstud.scheduleuniversity.dto.ScheduleType;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 
@@ -11,8 +12,8 @@ import java.util.List;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public class ScheduleObjectMapper {
 
-     public ScheduleObject toDocument(com.techstud.scheduleuniversity.dto.parser.response.ScheduleObject scheduleObject) {
-        ScheduleObject scheduleObjectResult = new ScheduleObject();
+     public ScheduleObjectDocument toDocument(ScheduleObjectParserResponse scheduleObject) {
+        ScheduleObjectDocument scheduleObjectResult = new ScheduleObjectDocument();
         scheduleObjectResult.setGroups(scheduleObject.getGroups());
         scheduleObjectResult.setPlace(scheduleObject.getPlace());
         scheduleObjectResult.setTeacher(scheduleObject.getTeacher());
@@ -21,9 +22,9 @@ public class ScheduleObjectMapper {
         return scheduleObjectResult;
     }
 
-    public List<ScheduleObject> toDocument(List<com.techstud.scheduleuniversity.dto.parser.response.ScheduleObject> scheduleObjects) {
-        List<ScheduleObject> list = new ArrayList<>(scheduleObjects.size());
-        for (com.techstud.scheduleuniversity.dto.parser.response.ScheduleObject scheduleObject : scheduleObjects) {
+    public List<ScheduleObjectDocument> toDocument(List<ScheduleObjectParserResponse> scheduleObjects) {
+        List<ScheduleObjectDocument> list = new ArrayList<>(scheduleObjects.size());
+        for (ScheduleObjectParserResponse scheduleObject : scheduleObjects) {
             list.add(toDocument(scheduleObject));
         }
         return list;

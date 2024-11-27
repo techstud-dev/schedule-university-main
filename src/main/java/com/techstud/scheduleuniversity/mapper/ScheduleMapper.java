@@ -1,9 +1,12 @@
 package com.techstud.scheduleuniversity.mapper;
 
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDay;
-import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheet;
-import com.techstud.scheduleuniversity.dto.response.schedule.Schedule;
-import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObject;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheetDocument;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObjectApiResponse;
 import com.techstud.scheduleuniversity.repository.mongo.TimeSheetRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -32,31 +35,31 @@ public class ScheduleMapper {
     private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    public Schedule toResponse(com.techstud.scheduleuniversity.dao.document.schedule.Schedule documentSchedule) {
-        return new Schedule(
+    public ScheduleApiResponse toResponse(ScheduleDocument documentSchedule) {
+        return new ScheduleApiResponse(
                 mapDocumentWeek(documentSchedule.getEvenWeekSchedule()),
                 mapDocumentWeek(documentSchedule.getOddWeekSchedule()),
                 formatDate(documentSchedule.getSnapshotDate())
         );
     }
 
-    private Map<String, com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDay> mapDocumentWeek(Map<DayOfWeek, ScheduleDay> documentWeek) {
-        Map<String, com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDay> response = new LinkedHashMap<>();
+    private Map<String, ScheduleDayApiResponse> mapDocumentWeek(Map<DayOfWeek, ScheduleDayDocument> documentWeek) {
+        Map<String, ScheduleDayApiResponse> response = new LinkedHashMap<>();
         documentWeek.forEach((dayOfWeek, scheduleDay) ->
                 response.put(getRuDayOfWeek(dayOfWeek), mapDocumentDay(scheduleDay))
         );
         return response;
     }
 
-    private com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDay mapDocumentDay(ScheduleDay documentDay) {
-        return new com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDay(
+    private ScheduleDayApiResponse mapDocumentDay(ScheduleDayDocument documentDay) {
+        return new ScheduleDayApiResponse(
                 formatDate(documentDay.getDate()),
                 mapDocumentLessons(documentDay.getLessons())
         );
     }
 
-    private Map<String, List<ScheduleObject>> mapDocumentLessons(Map<String, List<com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObject>> documentLessons) {
-        Map<String, List<ScheduleObject>> response = new LinkedHashMap<>();
+    private Map<String, List<ScheduleObjectApiResponse>> mapDocumentLessons(Map<String, List<ScheduleObjectDocument>> documentLessons) {
+        Map<String, List<ScheduleObjectApiResponse>> response = new LinkedHashMap<>();
         documentLessons.forEach((key, value) ->
                 timeSheetRepository.findById(key).ifPresent(timeSheet ->
                         response.put(getTimeInterval(timeSheet), mapDocumentObjects(value))
@@ -65,10 +68,10 @@ public class ScheduleMapper {
         return response;
     }
 
-    private List<ScheduleObject> mapDocumentObjects(List<com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObject> documentObjects) {
-        List<ScheduleObject> response = new ArrayList<>();
+    private List<ScheduleObjectApiResponse> mapDocumentObjects(List<ScheduleObjectDocument> documentObjects) {
+        List<ScheduleObjectApiResponse> response = new ArrayList<>();
         for (var documentObject : documentObjects) {
-            response.add(new ScheduleObject(
+            response.add(new ScheduleObjectApiResponse(
                     documentObject.getType().getRuName(),
                     documentObject.getName(),
                     documentObject.getTeacher(),
@@ -90,7 +93,7 @@ public class ScheduleMapper {
             return null;
     }
 
-    private String getTimeInterval(TimeSheet timeSheet) {
+    private String getTimeInterval(TimeSheetDocument timeSheet) {
         return timeSheet.getFrom().format(TIME_FORMATTER) + " - " + timeSheet.getTo().format(TIME_FORMATTER);
     }
 }

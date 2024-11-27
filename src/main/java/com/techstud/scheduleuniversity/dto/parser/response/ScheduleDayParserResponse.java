@@ -17,11 +17,11 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode
-public class ScheduleDay implements Serializable {
+public class ScheduleDayParserResponse implements Serializable {
 
     private Date date;
 
     @JsonDeserialize(keyUsing = TimeSheetKeyDeserializer.class)
-    private Map<TimeSheet, List<ScheduleObject>> lessons = new LinkedHashMap<>();
+    private Map<TimeSheetParserResponse, List<ScheduleObjectParserResponse>> lessons = new LinkedHashMap<>();
 
 }

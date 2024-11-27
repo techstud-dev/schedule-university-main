@@ -1,9 +1,10 @@
 package com.techstud.scheduleuniversity.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.ImportDto;
-import com.techstud.scheduleuniversity.dto.response.schedule.Schedule;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import com.techstud.scheduleuniversity.validation.RequestValidationService;
@@ -39,6 +40,9 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Для запуска этого теста необходимо запустить Docker Desktop!
+ */
 @Testcontainers
 @SpringBootTest
 @ActiveProfiles("dev")
@@ -75,7 +79,7 @@ public class AuthTest {
             .withPassword("abuser");
 
     @Container
-    private static final MongoDBContainer mongoContainer = new MongoDBContainer("mongo:6.0");
+    private static final MongoDBContainer mongoContainer = new MongoDBContainer("mongo:8.0.3");
 
     @DynamicPropertySource
     static void registerPostgresProperties(org.springframework.test.context.DynamicPropertyRegistry registry) {
@@ -117,12 +121,12 @@ public class AuthTest {
         ApiRequest<ImportDto> importRequest = new ApiRequest<>();
         importRequest.setData(importDto);
 
-        com.techstud.scheduleuniversity.dao.document.schedule.Schedule documentSchedule =
-                new com.techstud.scheduleuniversity.dao.document.schedule.Schedule();
-        Schedule schedule = new Schedule();
+        ScheduleDocument documentSchedule =
+                new ScheduleDocument();
+        ScheduleApiResponse schedule = new ScheduleApiResponse();
 
         when(scheduleService.importSchedule(any(ImportDto.class), eq("test-user"))).thenReturn(documentSchedule);
-        when(scheduleMapper.toResponse(any(com.techstud.scheduleuniversity.dao.document.schedule.Schedule.class)))
+        when(scheduleMapper.toResponse(any(ScheduleDocument.class)))
                 .thenReturn(schedule);
 
         String token = generateToken("test-user", List.of("USER"));
@@ -134,7 +138,7 @@ public class AuthTest {
                 .andExpect(status().isOk());
 
         verify(scheduleService).importSchedule(any(ImportDto.class), eq("test-user"));
-        verify(scheduleMapper).toResponse(any(com.techstud.scheduleuniversity.dao.document.schedule.Schedule.class));
+        verify(scheduleMapper).toResponse(any(ScheduleDocument.class));
     }
 
     @Test

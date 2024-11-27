@@ -10,7 +10,7 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @Builder
 @EqualsAndHashCode(of = {"from", "to"})
-public class TimeSheet implements Serializable {
+public class TimeSheetParserResponse implements Serializable {
 
     private LocalTime from;
 

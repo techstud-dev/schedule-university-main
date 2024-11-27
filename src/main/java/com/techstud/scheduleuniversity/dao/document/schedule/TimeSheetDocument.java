@@ -15,7 +15,7 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @Document(collection = "time_sheet")
 @EqualsAndHashCode(of = {"from", "to"})
-public class TimeSheet implements Serializable, HashableDocument {
+public class TimeSheetDocument implements Serializable, HashableDocument {
 
     @Id
     @JsonIgnore

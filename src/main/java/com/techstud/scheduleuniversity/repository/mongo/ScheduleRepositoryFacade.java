@@ -4,10 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.techstud.scheduleuniversity.dao.HashableDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.Schedule;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDay;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObject;
-import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheet;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheetDocument;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleDayParserResponse;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleObjectParserResponse;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
+import com.techstud.scheduleuniversity.dto.parser.response.TimeSheetParserResponse;
 import com.techstud.scheduleuniversity.mapper.ScheduleObjectMapper;
 import com.techstud.scheduleuniversity.mapper.TimeSheetMapper;
 import lombok.RequiredArgsConstructor;
@@ -44,57 +48,57 @@ public class ScheduleRepositoryFacade {
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-    public Schedule cascadeSave(com.techstud.scheduleuniversity.dto.parser.response.Schedule scheduleDto) {
+    public ScheduleDocument cascadeSave(ScheduleParserResponse scheduleDto) {
         try {
-            Schedule schedule = new Schedule();
+            ScheduleDocument schedule = new ScheduleDocument();
             schedule.setSnapshotDate(scheduleDto.getSnapshotDate());
             schedule.setEvenWeekSchedule(cascadeWeekSave(scheduleDto.getEvenWeekSchedule()));
             schedule.setOddWeekSchedule(cascadeWeekSave(scheduleDto.getOddWeekSchedule()));
             computeAndSetHash(schedule);
 
-            return findOrSave(schedule, Schedule.class, scheduleRepository);
+            return findOrSave(schedule, ScheduleDocument.class, scheduleRepository);
         } catch (Exception e) {
             throw new RuntimeException("Error cascade save schedule", e);
         }
     }
 
-    private Map<DayOfWeek, ScheduleDay> cascadeWeekSave(Map<DayOfWeek, com.techstud.scheduleuniversity.dto.parser.response.ScheduleDay> weekSchedule) {
-        Map<DayOfWeek, ScheduleDay> result = new LinkedHashMap<>();
+    private Map<DayOfWeek, ScheduleDayDocument> cascadeWeekSave(Map<DayOfWeek, ScheduleDayParserResponse> weekSchedule) {
+        Map<DayOfWeek, ScheduleDayDocument> result = new LinkedHashMap<>();
         weekSchedule.forEach((dayOfWeek, scheduleDayDto) -> {
-            ScheduleDay scheduleDay = cascadeDaySave(scheduleDayDto);
+            ScheduleDayDocument scheduleDay = cascadeDaySave(scheduleDayDto);
             result.put(dayOfWeek, scheduleDay);
         });
         return result;
     }
 
-    private ScheduleDay cascadeDaySave(com.techstud.scheduleuniversity.dto.parser.response.ScheduleDay scheduleDayDto) {
+    private ScheduleDayDocument cascadeDaySave(ScheduleDayParserResponse scheduleDayDto) {
         try {
-            ScheduleDay scheduleDay = new ScheduleDay();
+            ScheduleDayDocument scheduleDay = new ScheduleDayDocument();
             scheduleDay.setDate(scheduleDayDto.getDate());
             scheduleDay.setLessons(cascadeLessonSave(scheduleDayDto.getLessons()));
             computeAndSetHash(scheduleDay);
 
-            return findOrSave(scheduleDay, ScheduleDay.class, scheduleDayRepository);
+            return findOrSave(scheduleDay, ScheduleDayDocument.class, scheduleDayRepository);
         } catch (Exception e) {
             throw new RuntimeException("Error cascade save day", e);
         }
     }
 
-    private Map<String, List<ScheduleObject>> cascadeLessonSave(
-            Map<com.techstud.scheduleuniversity.dto.parser.response.TimeSheet, List<com.techstud.scheduleuniversity.dto.parser.response.ScheduleObject>> lessons) {
+    private Map<String, List<ScheduleObjectDocument>> cascadeLessonSave(
+            Map<TimeSheetParserResponse, List<ScheduleObjectParserResponse>> lessons) {
 
-        Map<String, List<ScheduleObject>> result = new LinkedHashMap<>();
+        Map<String, List<ScheduleObjectDocument>> result = new LinkedHashMap<>();
         lessons.forEach((timeSheetDto, scheduleObjectsDto) -> {
             try {
-                TimeSheet timeSheet = timeSheetMapper.toDocument(timeSheetDto);
+                TimeSheetDocument timeSheet = timeSheetMapper.toDocument(timeSheetDto);
                 computeAndSetHash(timeSheet);
-                timeSheet = findOrSave(timeSheet, TimeSheet.class, timeSheetRepository);
+                timeSheet = findOrSave(timeSheet, TimeSheetDocument.class, timeSheetRepository);
 
-                List<ScheduleObject> savedObjects = scheduleObjectMapper.toDocument(scheduleObjectsDto).stream()
+                List<ScheduleObjectDocument> savedObjects = scheduleObjectMapper.toDocument(scheduleObjectsDto).stream()
                         .map(scheduleObject -> {
                             try {
                                 computeAndSetHash(scheduleObject);
-                                return findOrSave(scheduleObject, ScheduleObject.class, scheduleObjectRepository);
+                                return findOrSave(scheduleObject, ScheduleObjectDocument.class, scheduleObjectRepository);
                             } catch (Exception e) {
                                 throw new RuntimeException("Error of save ScheduleObject", e);
                             }

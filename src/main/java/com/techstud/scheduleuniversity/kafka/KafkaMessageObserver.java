@@ -2,7 +2,7 @@ package com.techstud.scheduleuniversity.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.techstud.scheduleuniversity.dto.parser.response.Schedule;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +40,7 @@ public class KafkaMessageObserver {
     }
 
     @Async
-    public Schedule waitForParserResponse(UUID uuid) throws ParserResponseTimeoutException, ParserException {
+    public ScheduleParserResponse waitForParserResponse(UUID uuid) throws ParserResponseTimeoutException, ParserException {
         Long startTime = System.nanoTime() / 1000000;
         if (!messageInProcessing.contains(uuid.toString())) {
             log.error("Message with id = {} not sent into kafka or not registered", uuid);
@@ -55,7 +55,7 @@ public class KafkaMessageObserver {
         Long endTime = System.nanoTime() / 1000000;
         log.info("End waiting response from parser. Time spent {} ms", endTime - startTime);
         try {
-            return objectMapper.readValue(responsesFromParser.get(uuid.toString()), Schedule.class);
+            return objectMapper.readValue(responsesFromParser.get(uuid.toString()), ScheduleParserResponse.class);
         } catch (JsonProcessingException exception) {
             throw new ParserException("Error parsing response from parser", exception);
         } finally {

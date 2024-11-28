@@ -40,7 +40,6 @@ public class HttpAccessLogFilter extends OncePerRequestFilter {
             String headerName = headerNames.nextElement();
             String headerValue = request.getHeader(headerName);
 
-            // Маскируем заголовок Authorization
             if ("Authorization".equalsIgnoreCase(headerName)) {
                 headerValue = maskAuthorization(headerValue);
             }

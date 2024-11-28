@@ -65,7 +65,7 @@ public class ScheduleController {
                                               "message": "Unauthorized"
                                             }"""))),}
     )
-    @RateLimit(capacity = 1000, refillTokens = 1000, refillPeriod = 1, periodUnit = "MINUTES")
+    @RateLimit(capacity = 500, refillTokens = 500, refillPeriod = 1, periodUnit = "MINUTES")
     public EntityModel<ScheduleApiResponse> importSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Данные для импорта расписания",
             required = true,

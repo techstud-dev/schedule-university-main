@@ -4,6 +4,8 @@ import com.techstud.scheduleuniversity.annotation.RateLimit;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Bucket4j;
+import io.github.bucket4j.Refill;
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -18,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Aspect
 @Component
 @SuppressWarnings("deprecation")
+@Slf4j
 public class RateLimitAspect {
 
     private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
@@ -30,7 +33,10 @@ public class RateLimitAspect {
         Bucket bucket = buckets.computeIfAbsent(methodKey, key -> {
             Duration refillDuration = getDuration(rateLimit.refillPeriod(), rateLimit.periodUnit());
 
-            Bandwidth limit = Bandwidth.simple(rateLimit.capacity(), refillDuration);
+            Bandwidth limit = Bandwidth.classic(rateLimit.capacity(),
+                    Refill.greedy(rateLimit.refillTokens(), refillDuration));
+            log.info("Rate limit created for method: {}, capacity: {}, refillPeriod: {}, periodUnit: {}",
+                    methodKey, rateLimit.capacity(), rateLimit.refillPeriod(), rateLimit.periodUnit());
             return Bucket4j.builder().addLimit(limit).build();
         });
 

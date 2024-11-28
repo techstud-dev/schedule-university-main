@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,15 +22,20 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.springframework.data.mongodb.util.BsonUtils.toJson;
 
 @Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    @Value("${spring.application.name}")
+    private String systemName;
+
+    @Value("${spring.application.systemName}")
+    private String applicationName;
 
     private final SecretKey jwtSecretKey;
     private final String expectedIssuer;
@@ -108,8 +114,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
-        } catch (JwtException ex) {
-            log.error("JWT has been invalid", ex);
+        } catch (MalformedJwtException ex) {
+            handleJwtError(request, response, "Invalid JWT token", ex);
+            return;
+        } catch (ExpiredJwtException ex) {
+            handleJwtError(request, response, "Expired JWT token", ex);
+            return;
+        } catch (UnsupportedJwtException ex) {
+            handleJwtError(request, response, "Unsupported JWT token",ex);
+            return;
+        } catch (IllegalArgumentException ex) {
+            handleJwtError(request, response, "JWT claims string is empty", ex);
+            return;
+        } catch (SignatureException ex) {
+            handleJwtError(request, response, "Invalid JWT signature", ex);
+            return;
         }
 
         filterChain.doFilter(request, response);
@@ -122,5 +141,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearerToken.substring(7);
         }
         return null;
+    }
+
+    private void handleJwtError(HttpServletRequest request,
+                                HttpServletResponse response,
+                                String errorMessage, Exception e) throws IOException {
+        log.error("Authentication error: {}, remoteAddress: {}", e.getMessage(), request.getRemoteAddr());
+
+        Map<String, String> errorResponse = new LinkedHashMap<>();
+        errorResponse.put("systemName", systemName);
+        errorResponse.put("applicationName", applicationName);
+        errorResponse.put("error", errorMessage);
+
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write(toJson(errorResponse));
+    }
+
+    private String toJson(Map<String, String> map) {
+        StringBuilder jsonBuilder = new StringBuilder("{");
+        map.forEach((key, value) -> jsonBuilder
+                .append("\"")
+                .append(key)
+                .append("\":\"")
+                .append(value)
+                .append("\","));
+        jsonBuilder.deleteCharAt(jsonBuilder.length() - 1).append("}");
+        return jsonBuilder.toString();
     }
 }

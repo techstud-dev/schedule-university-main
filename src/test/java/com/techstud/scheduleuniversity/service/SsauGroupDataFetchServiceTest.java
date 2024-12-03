@@ -1,10 +1,9 @@
 package com.techstud.scheduleuniversity.service;
 
+import com.google.gson.Gson;
 import com.techstud.scheduleuniversity.dto.fetcher.GroupData;
 import com.techstud.scheduleuniversity.service.impl.SsauGroupDataFetchService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,8 @@ public class SsauGroupDataFetchServiceTest {
     @Test
     public void testFetchGroupData() {
         List<GroupData> groupDataList = ssauGroupDataFetchService.fetchGroupsData();
-        log.info("Group data list: {}", groupDataList);
+        String resultJson = new Gson().toJson(groupDataList);
+        log.info("Group data list: {}", resultJson);
         Assertions.assertNotNull(groupDataList);
     }
 }

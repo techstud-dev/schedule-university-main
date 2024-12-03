@@ -1,9 +1,8 @@
 package com.techstud.scheduleuniversity.service;
 
-
 import com.google.gson.Gson;
 import com.techstud.scheduleuniversity.dto.fetcher.GroupData;
-import com.techstud.scheduleuniversity.service.impl.fetcher.SseuGroupDataFetchService;
+import com.techstud.scheduleuniversity.service.impl.fetcher.BmstuGroupDataFetchService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,12 +13,12 @@ import java.util.List;
 
 @Slf4j
 @ActiveProfiles("dev")
-public class SseuGroupDataFetchServiceTest {
+public class BmstuGroupDataFetchServiceTest {
     private GroupFetcherService ssauGroupDataFetchService;
 
     @BeforeEach
     public void setUp() {
-        ssauGroupDataFetchService = new SseuGroupDataFetchService();
+        ssauGroupDataFetchService = new BmstuGroupDataFetchService();
     }
 
     @Test

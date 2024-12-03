@@ -1,4 +1,4 @@
-package com.techstud.scheduleuniversity.service.impl;
+package com.techstud.scheduleuniversity.service.impl.fetcher;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

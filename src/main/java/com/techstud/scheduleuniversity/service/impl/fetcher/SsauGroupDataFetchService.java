@@ -1,4 +1,4 @@
-package com.techstud.scheduleuniversity.service.impl;
+package com.techstud.scheduleuniversity.service.impl.fetcher;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,7 +34,6 @@ import java.util.stream.IntStream;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class SsauGroupDataFetchService implements GroupFetcherService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();

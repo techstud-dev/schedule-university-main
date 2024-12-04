@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
-@Service
+@Service("SSAU_GROUP_FETCHER")
 @Slf4j
 public class SsauGroupDataFetchService implements GroupFetcherService {
 

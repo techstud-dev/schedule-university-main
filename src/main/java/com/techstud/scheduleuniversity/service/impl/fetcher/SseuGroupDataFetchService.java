@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
+@Service("SSEU_GROUP_FETCHER")
 @Slf4j
 public class SseuGroupDataFetchService implements GroupFetcherService {
 

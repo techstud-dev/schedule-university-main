@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
+@Service("BMSTU_GROUP_FETCHER")
 @Slf4j
 public class BmstuGroupDataFetchService implements GroupFetcherService {
 

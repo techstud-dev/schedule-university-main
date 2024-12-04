@@ -15,17 +15,19 @@ import java.util.List;
 @Slf4j
 @ActiveProfiles("dev")
 public class SseuGroupDataFetchServiceTest {
-    private GroupFetcherService ssauGroupDataFetchService;
+
+    private GroupFetcherService sseuGroupDataFetchService;
 
     @BeforeEach
     public void setUp() {
-        ssauGroupDataFetchService = new SseuGroupDataFetchService();
+        sseuGroupDataFetchService = new SseuGroupDataFetchService();
     }
 
     @Test
     public void testFetchGroupData() {
-        List<GroupData> groupDataList = ssauGroupDataFetchService.fetchGroupsData();
+        List<GroupData> groupDataList = sseuGroupDataFetchService.fetchGroupsData();
         String resultJson = new Gson().toJson(groupDataList);
+        System.out.println(resultJson);
         log.info("Group data list: {}", resultJson);
         Assertions.assertNotNull(groupDataList);
     }

@@ -62,13 +62,8 @@ public class MiitGroupDataFetchService implements GroupFetcherService {
 
                 groupDataList = groupDataList.stream()
                         .filter(group -> {
-                            try {
-                                Integer.parseInt(group.universityGroupId());
-                                return true;
-                            } catch (NumberFormatException e) {
-                                log.warn("Excluding non-numeric universityGroupId: {}", group.universityGroupId());
-                                return false;
-                            }
+                            Integer.parseInt(group.universityGroupId());
+                            return true;
                         })
                         .sorted(Comparator.comparingInt(group -> Integer.parseInt(group.universityGroupId())))
                         .collect(Collectors.toList());

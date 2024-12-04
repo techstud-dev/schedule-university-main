@@ -26,7 +26,6 @@ public class BmstuGroupDataFetchServiceTest {
     public void testFetchGroupData() {
         List<GroupData> groupDataList = bmstuGroupDataFetchService.fetchGroupsData();
         String resultJson = new Gson().toJson(groupDataList);
-        System.out.println(resultJson);
         log.info("Group data list: {}", resultJson);
         Assertions.assertNotNull(groupDataList);
     }

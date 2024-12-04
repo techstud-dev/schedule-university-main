@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.techstud.scheduleuniversity.dto.fetcher.GroupData;
 import com.techstud.scheduleuniversity.service.GroupFetcherService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -18,8 +22,21 @@ public class NsuGroupDataFetchService implements GroupFetcherService {
     @Override
     public List<GroupData> fetchGroupsData() {
         List<GroupData> groupDataList = new ArrayList<>();
-        String baseUrl = "https://table.nsu.ru/group";
+        String baseUrl = "https://table.nsu.ru/faculties";
 
-        return List.of();
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpGet httpGet = new HttpGet(baseUrl);
+
+            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+
+        return groupDataList;
     }
 }

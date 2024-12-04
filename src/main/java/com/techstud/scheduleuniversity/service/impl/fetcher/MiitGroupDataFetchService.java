@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MiitGroupDataFetchService implements GroupFetcherService {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     @Override
     public List<GroupData> fetchGroupsData() {
         List<GroupData> groupDataList = new ArrayList<>();

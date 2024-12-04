@@ -27,8 +27,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MephiGroupDataFetchService implements GroupFetcherService {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     @Override
     public List<GroupData> fetchGroupsData() {
         List<GroupData> groupDataList = new ArrayList<>();

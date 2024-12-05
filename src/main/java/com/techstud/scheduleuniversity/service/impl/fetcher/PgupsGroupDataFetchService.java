@@ -48,6 +48,7 @@ public class PgupsGroupDataFetchService implements GroupFetcherService {
                 }
 
                 groupDataList = groupDataList.stream()
+                        .filter(this::isValidGroup)
                         .sorted(Comparator.comparing(GroupData::universityGroupId))
                         .collect(Collectors.toList());
 
@@ -58,5 +59,14 @@ public class PgupsGroupDataFetchService implements GroupFetcherService {
             log.error(e.getMessage(), e);
         }
         return groupDataList;
+    }
+
+    private boolean isValidGroup(GroupData group) {
+        if (!group.universityGroupId().matches("\\d+")) {
+            log.warn("Filtered out non-numeric group: {}", group);
+            return false;
+        }
+
+        return true;
     }
 }

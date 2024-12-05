@@ -50,11 +50,11 @@ public class NsuGroupDataFetchService implements GroupFetcherService {
                         .collect(Collectors.toList());
 
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                log.error("Error processing pattern {}", e.getMessage());
             }
 
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("Error fetching group data from NSU", e);
         }
 
         return groupDataList;
@@ -80,11 +80,14 @@ public class NsuGroupDataFetchService implements GroupFetcherService {
                         groupDataList.add(new GroupData(groupCode, universityGroupId));
                     }
                 }
+
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                log.error("Error processing groups {}", e.getMessage());
             }
+
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.error("Error fetching group data from NSU", e);
         }
+
     }
 }

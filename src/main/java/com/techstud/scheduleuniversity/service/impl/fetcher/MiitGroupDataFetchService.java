@@ -59,10 +59,6 @@ public class MiitGroupDataFetchService implements GroupFetcherService {
                 }
 
                 groupDataList = groupDataList.stream()
-                        .filter(group -> {
-                            Integer.parseInt(group.universityGroupId());
-                            return true;
-                        })
                         .sorted(Comparator.comparingInt(group -> Integer.parseInt(group.universityGroupId())))
                         .collect(Collectors.toList());
 

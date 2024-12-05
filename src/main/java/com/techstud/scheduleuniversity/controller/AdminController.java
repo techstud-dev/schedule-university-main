@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("api/v1/admin")
 @Slf4j
 @RequiredArgsConstructor
+@SuppressWarnings("all")
 public class AdminController {
 
     private final AdminService adminService;

@@ -13,6 +13,7 @@ import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import com.techstud.scheduleuniversity.swagger.ApiRequestImportDto;
+import com.techstud.scheduleuniversity.util.ApiResponseConverter;
 import com.techstud.scheduleuniversity.validation.RequestValidationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,6 +43,7 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
     private final RequestValidationService requestValidationService;
     private final ScheduleMapper scheduleMapper;
+    private final ApiResponseConverter apiResponseConverter;
 
     @PostMapping("/import")
     @PreAuthorize("hasRole('USER')")
@@ -80,7 +82,7 @@ public class ScheduleController {
         ScheduleDocument documentSchedule =
                 scheduleService.importSchedule(importRequest.getData(), principal.getName());
         ScheduleApiResponse schedule = scheduleMapper.toResponse(documentSchedule);
-        return EntityModel.of(schedule);
+        return apiResponseConverter.convertToEntityModel(schedule, documentSchedule);
     }
 
     @PostMapping("/forceImport")
@@ -120,7 +122,7 @@ public class ScheduleController {
         ScheduleDocument documentSchedule =
                 scheduleService.forceImportSchedule(importRequest.getData(), principal.getName());
         ScheduleApiResponse schedule = scheduleMapper.toResponse(documentSchedule);
-        return EntityModel.of(schedule);
+        return apiResponseConverter.convertToEntityModel(schedule, documentSchedule);
     }
 
     @GetMapping("/{scheduleId}")

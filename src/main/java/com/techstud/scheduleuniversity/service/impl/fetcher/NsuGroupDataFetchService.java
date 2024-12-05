@@ -1,6 +1,5 @@
 package com.techstud.scheduleuniversity.service.impl.fetcher;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.techstud.scheduleuniversity.dto.fetcher.GroupData;
 import com.techstud.scheduleuniversity.service.GroupFetcherService;
 import lombok.extern.slf4j.Slf4j;
@@ -45,10 +44,6 @@ public class NsuGroupDataFetchService implements GroupFetcherService {
                     }
                 }
 
-                groupDataList = groupDataList.stream()
-                        .sorted(Comparator.comparing(GroupData::groupCode))
-                        .collect(Collectors.toList());
-
             } catch (Exception e) {
                 log.error("Error processing pattern {}", e.getMessage());
             }
@@ -57,7 +52,9 @@ public class NsuGroupDataFetchService implements GroupFetcherService {
             log.error("Error fetching group data from NSU", e);
         }
 
-        return groupDataList;
+        return  groupDataList.stream()
+                .sorted(Comparator.comparing(GroupData::universityGroupId))
+                .collect(Collectors.toList());
     }
 
     private void parseFacultyGroups(CloseableHttpClient httpClient, String facultyLink, List<GroupData> groupDataList) {

@@ -1,6 +1,5 @@
 package com.techstud.scheduleuniversity.service.impl.fetcher;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.techstud.scheduleuniversity.dto.fetcher.GroupData;
 import com.techstud.scheduleuniversity.service.GroupFetcherService;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +31,7 @@ public class PgupsGroupDataFetchService implements GroupFetcherService {
 
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(baseUrl);
-            
+
             try (CloseableHttpResponse response = httpClient.execute(httpGet)){
                 String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
                 Document document = Jsoup.parse(responseBody);
@@ -59,7 +58,11 @@ public class PgupsGroupDataFetchService implements GroupFetcherService {
         } catch (Exception e) {
             log.error("Error processing data from PGUPS {}", e.getMessage());
         }
-        return groupDataList;
+
+        return groupDataList.stream()
+                .filter(this::isValidGroup)
+                .sorted(Comparator.comparing(GroupData::universityGroupId))
+                .collect(Collectors.toList());
     }
 
     private boolean isValidGroup(GroupData group) {

@@ -1,6 +1,5 @@
 package com.techstud.scheduleuniversity.service.impl.fetcher;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.techstud.scheduleuniversity.dto.fetcher.GroupData;
 import com.techstud.scheduleuniversity.service.GroupFetcherService;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +15,7 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,10 +55,6 @@ public class MiitGroupDataFetchService implements GroupFetcherService {
                     groupDataList.add(new GroupData(groupCode, universityGroupId));
                 }
 
-                groupDataList = groupDataList.stream()
-                        .sorted(Comparator.comparingInt(group -> Integer.parseInt(group.universityGroupId())))
-                        .collect(Collectors.toList());
-
             } catch (Exception e) {
                 log.error("Error processing pattern {}", e.getMessage());
             }
@@ -70,7 +63,9 @@ public class MiitGroupDataFetchService implements GroupFetcherService {
             log.error("Error fetching group data from MIIT", e);
         }
 
-        return groupDataList;
+        return  groupDataList.stream()
+                .sorted(Comparator.comparing(GroupData::universityGroupId))
+                .collect(Collectors.toList());
     }
 
     private boolean isNumeric(String str) {

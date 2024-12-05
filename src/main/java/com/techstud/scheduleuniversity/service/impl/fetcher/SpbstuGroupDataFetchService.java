@@ -16,7 +16,9 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -48,7 +50,9 @@ public class SpbstuGroupDataFetchService implements GroupFetcherService {
             log.error(e.getMessage());
         }
 
-        return groupDataList;
+        return groupDataList.stream()
+                .sorted(Comparator.comparing(GroupData::universityGroupId))
+                .collect(Collectors.toList());
     }
 
     private void parseFacultyGroups(CloseableHttpClient httpClient, String facultyLink, List<GroupData> groupDataList) {

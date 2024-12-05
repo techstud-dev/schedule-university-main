@@ -1,6 +1,5 @@
 package com.techstud.scheduleuniversity.service.impl.fetcher;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.techstud.scheduleuniversity.dto.fetcher.GroupData;
 import com.techstud.scheduleuniversity.service.GroupFetcherService;
 import lombok.extern.slf4j.Slf4j;
@@ -66,10 +65,6 @@ public class MephiGroupDataFetchService implements GroupFetcherService {
                         log.warn("No groups found for level {}", level);
                     }
 
-                    groupDataList = groupDataList.stream()
-                            .sorted(Comparator.comparing(GroupData::groupCode))
-                            .collect(Collectors.toList());
-
                 } catch (Exception e) {
                     log.error("Error processing level {}: {}", level, e.getMessage());
                 }
@@ -79,7 +74,9 @@ public class MephiGroupDataFetchService implements GroupFetcherService {
             log.error("Error fetching group data from MEPHI", e);
         }
 
-        return  groupDataList;
+        return  groupDataList.stream()
+                .sorted(Comparator.comparing(GroupData::universityGroupId))
+                .collect(Collectors.toList());
     }
 
     private String fetchCsrfToken(CloseableHttpClient httpClient, String baseUrl) {

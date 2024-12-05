@@ -2,10 +2,10 @@ package com.techstud.scheduleuniversity.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.Async;
@@ -58,7 +58,7 @@ public class KafkaMessageObserver {
         try {
             return objectMapper.readValue(responsesFromParser.get(uuid.toString()), ScheduleParserResponse.class);
         } catch (JsonProcessingException exception) {
-            throw new ParserException("Error parsing response from parser", exception);
+                throw new ParserException(responsesFromParser.get(uuid.toString()));
         } finally {
             messageInProcessing.remove(uuid.toString());
             responsesFromParser.remove(uuid.toString());

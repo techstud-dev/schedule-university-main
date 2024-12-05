@@ -1,5 +1,6 @@
 package com.techstud.scheduleuniversity.handler;
 
+import com.techstud.scheduleuniversity.exception.ParserException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.io.DeserializationException;
@@ -67,5 +68,12 @@ public class GlobalExceptionHandler {
                 request.getRemoteAddr(),
                 e.getAuthorizationResult(), e);
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(ParserException.class)
+    public ResponseEntity<Map<String, String>> handleParserException(ParserException e) {
+        Map<String, String> response = e.getParserResponse();
+        log.error("Error import schedule from university", e);
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 }

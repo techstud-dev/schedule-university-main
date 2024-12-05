@@ -7,7 +7,9 @@ import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObjectApiResponse;
+import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.RequestException;
+import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import com.techstud.scheduleuniversity.swagger.ApiRequestImportDto;
@@ -72,11 +74,51 @@ public class ScheduleController {
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = ApiRequestImportDto.class)))
                                                            @RequestBody ApiRequest<ImportDto> importRequest,
-                                                           @Parameter(hidden = true) Principal principal) throws RequestException {
+                                                           @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
         log.info("Incoming request to import schedule, body: {}, user: {}", importRequest, principal.getName());
         requestValidationService.validateImportRequest(importRequest);
         ScheduleDocument documentSchedule =
                 scheduleService.importSchedule(importRequest.getData(), principal.getName());
+        ScheduleApiResponse schedule = scheduleMapper.toResponse(documentSchedule);
+        return EntityModel.of(schedule);
+    }
+
+    @PostMapping("/forceImport")
+    @PreAuthorize("hasRole('USER')")
+    @Operation(
+            summary = "Запрос на принудительный импорт расписания",
+            description = "Запрос на парсинг расписания и сохранение или перезапись в БД, " +
+                    "после привязки к пользователею, совершившего запрос.",
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            description = "Успешный импорт расписания",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class))),
+                    @ApiResponse(responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = """
+                                            {\
+                                              "systemName": "tchs",
+                                             \
+                                              "applicationName": "schedule-university-main",
+                                             \
+                                              "message": "Unauthorized"
+                                            }"""))),}
+    )
+    @RateLimit(capacity = 200, refillTokens = 200, refillPeriod = 1, periodUnit = "MINUTES")
+    public EntityModel<ScheduleApiResponse> forceImportSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Данные для импорта расписания",
+            required = true,
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ApiRequestImportDto.class)))
+                                                           @RequestBody ApiRequest<ImportDto> importRequest,
+                                                           @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
+        log.info("Incoming request to force import schedule, body: {}, user: {}", importRequest, principal.getName());
+        requestValidationService.validateImportRequest(importRequest);
+        ScheduleDocument documentSchedule =
+                scheduleService.forceImportSchedule(importRequest.getData(), principal.getName());
         ScheduleApiResponse schedule = scheduleMapper.toResponse(documentSchedule);
         return EntityModel.of(schedule);
     }

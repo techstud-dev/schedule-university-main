@@ -55,8 +55,9 @@ public class PgupsGroupDataFetchService implements GroupFetcherService {
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
             }
+
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.error("Error processing data from PGUPS {}", e.getMessage());
         }
         return groupDataList;
     }

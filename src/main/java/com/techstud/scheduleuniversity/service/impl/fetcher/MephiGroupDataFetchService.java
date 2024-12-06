@@ -5,10 +5,8 @@ import com.techstud.scheduleuniversity.service.GroupFetcherService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -16,11 +14,12 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.createResponseHandler;
 
 @Service
 @Slf4j
@@ -34,40 +33,30 @@ public class MephiGroupDataFetchService implements GroupFetcherService {
 
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 
-            String csrfToken = fetchCsrfToken(httpClient, baseUrl);
-            if (csrfToken == null) {
-                log.error("Failed to fetch CSRF token");
-                return groupDataList;
-            }
-
             for (int level : levels) {
                 String levelUrl = baseUrl + "/study_groups?level=" + level + "&organization_id=1&term_id=19";
 
-                HttpGet httpGet = getHttpGet(levelUrl, csrfToken);
+                HttpGet httpGet = getHttpGet(levelUrl);
 
-                try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                    String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                String responseBody = httpClient.execute(httpGet, createResponseHandler(String.class, true));
 
-                    Document document = Jsoup.parse(responseBody);
+                Document document = Jsoup.parse(responseBody);
 
-                    Elements groups = document.select("a.list-group-item");
+                Elements groups = document.select("a.list-group-item");
 
-                    for (Element groupElement : groups) {
-                        String groupCode = groupElement.text();
+                for (Element groupElement : groups) {
+                    String groupCode = groupElement.text();
 
-                        String href = groupElement.attr("href");
-                        String universityGroupId = href.split("/")[2];
+                    String href = groupElement.attr("href");
+                    String universityGroupId = href.split("/")[2];
 
-                        groupDataList.add(new GroupData(groupCode, universityGroupId));
-                    }
-
-                    if (groups.isEmpty()) {
-                        log.warn("No groups found for level {}", level);
-                    }
-
-                } catch (Exception e) {
-                    log.error("Error processing level {}: {}", level, e.getMessage());
+                    groupDataList.add(new GroupData(groupCode, universityGroupId));
                 }
+
+                if (groups.isEmpty()) {
+                    log.warn("No groups found for level {}", level);
+                }
+
             }
 
         } catch (Exception e) {
@@ -79,50 +68,27 @@ public class MephiGroupDataFetchService implements GroupFetcherService {
                 .collect(Collectors.toList());
     }
 
-    private String fetchCsrfToken(CloseableHttpClient httpClient, String baseUrl) {
-        String csrfToken = null;
-        String mainUrl = baseUrl + "/study_groups?level=0&organization_id=1&term_id=19";
-
-        try {
-            HttpGet httpGet = new HttpGet(mainUrl);
-            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-
-                Document document = Jsoup.parse(responseBody);
-                csrfToken = document.select("meta[name=csrf-token]").attr("content");
-            }
-        } catch (Exception e) {
-            log.error("Error fetching CSRF token: {}", e.getMessage());
-        }
-
-        return csrfToken;
-    }
-
-    private static HttpGet getHttpGet(String url, String csrfToken) {
+    private static HttpGet getHttpGet(String url) {
         HttpGet httpGet = new HttpGet(url);
 
-        // можно куки не передавать
-        Header[] commonHeaders = {
-                new BasicHeader("Accept", "application/json, text/javascript, */*; q=0.01"),
-                new BasicHeader("Accept-Encoding", "gzip, deflate, br, zstd"),
-                new BasicHeader("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"),
-                new BasicHeader("Connection", "keep-alive"),
-                new BasicHeader("Content-Type", "application/json; charset=UTF-8"),
-                new BasicHeader("Host", "home.mephi.ru"),
-                new BasicHeader("Origin", "https://home.mephi.ru"),
-                new BasicHeader("Referer", "https://home.mephi.ru/study_groups?level=0&organization_id=1&term_id=19"),
-                new BasicHeader("Sec-CH-UA", "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\""),
-                new BasicHeader("Sec-CH-UA-Mobile", "?0"),
-                new BasicHeader("Sec-CH-UA-Platform", "\"Windows\""),
-                new BasicHeader("Sec-Fetch-Dest", "empty"),
-                new BasicHeader("Sec-Fetch-Mode", "cors"),
-                new BasicHeader("Sec-Fetch-Site", "same-origin"),
-                new BasicHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"),
-                new BasicHeader("X-CSRF-Token", csrfToken),
-                new BasicHeader("X-Requested-With", "XMLHttpRequest")
-        };
+        List<Header> headers = new ArrayList<>();
+        headers.add(new BasicHeader("Accept", "application/json, text/javascript, */*; q=0.01"));
+        headers.add(new BasicHeader("Accept-Encoding", "gzip, deflate, br, zstd"));
+        headers.add(new BasicHeader("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"));
+        headers.add(new BasicHeader("Connection", "keep-alive"));
+        headers.add(new BasicHeader("Content-Type", "application/json; charset=UTF-8"));
+        headers.add(new BasicHeader("Host", "home.mephi.ru"));
+        headers.add(new BasicHeader("Origin", "https://home.mephi.ru"));
+        headers.add(new BasicHeader("Sec-CH-UA", "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\""));
+        headers.add(new BasicHeader("Sec-CH-UA-Mobile", "?0"));
+        headers.add(new BasicHeader("Sec-CH-UA-Platform", "\"Windows\""));
+        headers.add(new BasicHeader("Sec-Fetch-Dest", "empty"));
+        headers.add(new BasicHeader("Sec-Fetch-Mode", "cors"));
+        headers.add(new BasicHeader("Sec-Fetch-Site", "same-origin"));
+        headers.add(new BasicHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"));
+        headers.add(new BasicHeader("X-Requested-With", "XMLHttpRequest"));
 
-        httpGet.setHeaders(commonHeaders);
+        httpGet.setHeaders(headers.toArray(new Header[0]));
         return httpGet;
     }
 }

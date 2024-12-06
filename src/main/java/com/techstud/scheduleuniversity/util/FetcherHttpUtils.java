@@ -10,6 +10,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Function;
 
 @Slf4j
 public class FetcherHttpUtils {
@@ -58,5 +59,20 @@ public class FetcherHttpUtils {
     @FunctionalInterface
     private interface BodyProcessor<T> {
         T process(String body) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ThrowingFunction<T, R> {
+        R apply(T t) throws Exception;
+    }
+
+    public static <T, R> Function<T, R> unchecked(ThrowingFunction<T, R> function) {
+        return t -> {
+            try {
+                return function.apply(t);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 }

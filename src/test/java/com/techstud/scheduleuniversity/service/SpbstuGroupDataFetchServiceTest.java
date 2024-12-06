@@ -1,5 +1,6 @@
 package com.techstud.scheduleuniversity.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
 import com.techstud.scheduleuniversity.dto.fetcher.GroupData;
 import com.techstud.scheduleuniversity.service.impl.fetcher.SpbstuGroupDataFetchService;

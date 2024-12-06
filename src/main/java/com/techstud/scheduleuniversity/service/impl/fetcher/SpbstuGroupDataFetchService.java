@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.createResponseHandler;
 
-@Service
+@Service("SPBSTU_GROUP_FETCHER")
 @Slf4j
 public class SpbstuGroupDataFetchService implements GroupFetcherService {
 

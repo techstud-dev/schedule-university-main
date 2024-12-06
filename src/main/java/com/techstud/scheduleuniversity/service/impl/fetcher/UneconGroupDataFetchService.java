@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.createResponseHandler;
 
-@Service
+@Service("UNECON_GROUP_FETCHER")
 @Slf4j
 public class UneconGroupDataFetchService implements GroupFetcherService {
 

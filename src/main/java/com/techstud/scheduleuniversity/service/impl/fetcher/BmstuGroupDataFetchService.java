@@ -1,6 +1,5 @@
 package com.techstud.scheduleuniversity.service.impl.fetcher;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.techstud.scheduleuniversity.dto.fetcher.GroupData;
 import com.techstud.scheduleuniversity.dto.fetcher.api.response.BmstuApiGroupDataResponse;
 import com.techstud.scheduleuniversity.service.GroupFetcherService;
@@ -18,11 +17,9 @@ import java.util.List;
 
 import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.createResponseHandler;
 
-@Service
+@Service("BMSTU_GROUP_FETCHER")
 @Slf4j
 public class BmstuGroupDataFetchService implements GroupFetcherService {
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public List<GroupData> fetchGroupsData() {

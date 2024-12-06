@@ -23,7 +23,7 @@ import java.util.stream.StreamSupport;
 import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.unchecked;
 import static org.apache.hc.client5.http.impl.classic.HttpClients.createDefault;
 
-@Service
+@Service("TLTSU_GROUP_FETCHER")
 @Slf4j
 public class TltsuGroupDataFetchService implements GroupFetcherService {
 

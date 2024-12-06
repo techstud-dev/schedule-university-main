@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.createResponseHandler;
 
-@Service
+@Service("MEPHI_GROUP_FETCHER")
 @Slf4j
 public class MephiGroupDataFetchService implements GroupFetcherService {
 

@@ -8,7 +8,7 @@ import org.hibernate.annotations.FetchMode;
 
 @Entity
 @Table(name = "university_group", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"university_id", "university_group_id", "group_code"})
+        @UniqueConstraint(columnNames = {"university_group_id", "group_code"})
 })
 @Data
 @NoArgsConstructor
@@ -32,4 +32,9 @@ public class UniversityGroup {
     @Column(name = "schedule_mongo_id")
     private String scheduleMongoId;
 
+    public UniversityGroup(University university, String groupCode, String universityGroupId) {
+        this.university = university;
+        this.groupCode = groupCode;
+        this.universityGroupId = universityGroupId;
+    }
 }

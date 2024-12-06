@@ -7,16 +7,16 @@ import com.techstud.scheduleuniversity.service.GroupFetcherService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.createResponseHandler;
 
 @Service
 @Slf4j
@@ -32,16 +32,12 @@ public class BmstuGroupDataFetchService implements GroupFetcherService {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = getHttpGet(baseUrl);
 
-            try (CloseableHttpResponse getResponse = httpClient.execute(httpGet)) {
-                if (getResponse.getCode() == 200 || getResponse.getCode() == 304) {
-                    String responseBody = EntityUtils.toString(getResponse.getEntity(), StandardCharsets.UTF_8);
-                    BmstuApiGroupDataResponse apiResponse = objectMapper.readValue(responseBody, BmstuApiGroupDataResponse.class);
-                    groupDataList = mapApiResponseToGroupDataList(apiResponse);
-                } else {
-                    log.error("Failed to fetch group data from BMSTU. Status code: {}", getResponse.getCode());
-                }
+            HttpClientResponseHandler<BmstuApiGroupDataResponse> responseHandler =
+                    createResponseHandler(BmstuApiGroupDataResponse.class, false);
 
-            }
+            BmstuApiGroupDataResponse apiResponse = httpClient.execute(httpGet, responseHandler);
+
+            groupDataList = mapApiResponseToGroupDataList(apiResponse);
         } catch (Exception e) {
             log.error("Error fetching group data", e);
         }

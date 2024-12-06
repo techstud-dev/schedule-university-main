@@ -5,20 +5,19 @@ import com.techstud.scheduleuniversity.service.GroupFetcherService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.createResponseHandler;
 
 @Service
 @Slf4j
@@ -36,21 +35,14 @@ public class UneconGroupDataFetchService implements GroupFetcherService {
             httpGet.addHeader("Referer", "https://rasp.unecon.ru/raspisanie.php");
             httpGet.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 
-            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                if (response.getCode() == 200) {
-                    String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-                    Document document = Jsoup.parse(responseBody);
+            String responseBody = httpClient.execute(httpGet, createResponseHandler(String.class, true));
+            Document document = Jsoup.parse(responseBody);
 
-                    Elements facultyElements = document.select(".fakultets a");
-                    for (Element facultyElement : facultyElements) {
-                        String facultyLink = facultyElement.attr("href");
+            Elements facultyElements = document.select(".fakultets a");
+            for (Element facultyElement : facultyElements) {
+                String facultyLink = facultyElement.attr("href");
 
-                        parseFacultyGroups(httpClient, facultyLink, groupDataList);
-                    }
-
-                } else {
-                    log.error("Failed to fetch base URL. Response code: {}", response.getCode());
-                }
+                parseFacultyGroups(httpClient, facultyLink, groupDataList);
             }
 
         } catch (Exception e) {
@@ -72,24 +64,18 @@ public class UneconGroupDataFetchService implements GroupFetcherService {
             httpGet.addHeader("Referer", "https://rasp.unecon.ru/");
             httpGet.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 
-            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                if (response.getCode() == 200) {
-                    String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-                    Document document = Jsoup.parse(responseBody);
+            String responseBody = httpClient.execute(httpGet, createResponseHandler(String.class, true));
+            Document document = Jsoup.parse(responseBody);
 
-                    Elements courseLinks = document.select("div.kurses a");
-                    for (Element courseLink : courseLinks) {
-                        String courseHref = courseLink.attr("href");
+            Elements courseLinks = document.select("div.kurses a");
+            for (Element courseLink : courseLinks) {
+                String courseHref = courseLink.attr("href");
 
-                        String courseUrl = "https://rasp.unecon.ru/" + courseHref;
+                String courseUrl = "https://rasp.unecon.ru/" + courseHref;
 
-                        parseCourseGroups(httpClient, courseUrl, groupDataList);
-                    }
-
-                } else {
-                    log.error("Failed to fetch faculty page: {}. Response code: {}", facultyUrl, response.getCode());
-                }
+                parseCourseGroups(httpClient, courseUrl, groupDataList);
             }
+
         } catch (Exception e) {
             log.error("Error while parsing faculty groups: {}", e.getMessage());
         }
@@ -103,24 +89,17 @@ public class UneconGroupDataFetchService implements GroupFetcherService {
             httpGet.addHeader("Referer", "https://rasp.unecon.ru/");
             httpGet.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 
-            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                if (response.getCode() == 200) {
-                    String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-                    Document document = Jsoup.parse(responseBody);
+            String responseBody = httpClient.execute(httpGet, createResponseHandler(String.class, true));
+            Document document = Jsoup.parse(responseBody);
 
-                    Elements groupLinks = document.select("div.grps a");
-                    for (Element groupLink : groupLinks) {
-                        String href = groupLink.attr("href");
-                        String groupCode = groupLink.text();
-                        String universityGroupId = href.replace("raspisanie_grp.php?g=", "");
+            Elements groupLinks = document.select("div.grps a");
+            for (Element groupLink : groupLinks) {
+                String href = groupLink.attr("href");
+                String groupCode = groupLink.text();
+                String universityGroupId = href.replace("raspisanie_grp.php?g=", "");
 
-                        groupDataList.add(new GroupData(groupCode, universityGroupId));
-                        log.info("Parsed group: {} (ID: {})", groupCode, universityGroupId);
-                    }
-
-                } else {
-                    log.error("Failed to fetch course page: {}. Response code: {}", courseUrl, response.getCode());
-                }
+                groupDataList.add(new GroupData(groupCode, universityGroupId));
+                log.info("Parsed group: {} (ID: {})", groupCode, universityGroupId);
             }
 
         } catch (Exception e) {

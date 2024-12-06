@@ -5,18 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.techstud.scheduleuniversity.dto.fetcher.GroupData;
 import com.techstud.scheduleuniversity.dto.fetcher.api.response.SsauApiGroupDataResponse;
 import com.techstud.scheduleuniversity.service.GroupFetcherService;
-import io.jsonwebtoken.lang.Arrays;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.entity.UrlEncodedFormEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.NameValuePair;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.jsoup.Jsoup;
@@ -26,10 +23,13 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.createResponseHandler;
 
 
 @Service
@@ -50,23 +50,24 @@ public class SsauGroupDataFetchService implements GroupFetcherService {
             HttpGet httpGet = new HttpGet(baseUrl);
             httpGet.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
 
-            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-                Document document = Jsoup.parse(responseBody);
-                Element csrfTag = document.selectFirst("meta[name=csrf-token]");
+            HttpClientResponseHandler<String> csrfResponseHandler =
+                    createResponseHandler(String.class, true);
 
-                if (csrfTag != null) {
-                    csrfToken = csrfTag.attr("content");
-                    log.info("CSRF token: {}", csrfToken);
-                } else {
-                    log.error("CSRF token not found");
-                    return groupDataList;
-                }
+            String responseBody = httpClient.execute(httpGet, csrfResponseHandler);
+            Document document = Jsoup.parse(responseBody);
+            Element csrfTag = document.selectFirst("meta[name=csrf-token]");
 
-                fullCookies = Arrays.asList(response.getHeaders("Set-Cookie")).stream()
-                        .map(header -> header.getValue().split(";")[0])
-                        .collect(Collectors.joining("; "));
+            if (csrfTag != null) {
+                csrfToken = csrfTag.attr("content");
+                log.info("CSRF token: {}", csrfToken);
+            } else {
+                log.error("CSRF token not found");
+                return groupDataList;
             }
+
+            fullCookies = Arrays.stream(httpClient.execute(httpGet).getHeaders("Set-Cookie"))
+                    .map(header -> header.getValue().split(";")[0])
+                    .collect(Collectors.joining("; "));
 
             Header[] commonHeaders = {
                     new BasicHeader("Accept", "application/json"),
@@ -99,24 +100,20 @@ public class SsauGroupDataFetchService implements GroupFetcherService {
                 List<NameValuePair> params = Collections.singletonList(new BasicNameValuePair("text", pattern));
                 httpPost.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8));
 
-                try (CloseableHttpResponse postResponse = httpClient.execute(httpPost)) {
-                    if (postResponse.getCode() == 200) {
-                        String responseBody = EntityUtils.toString(postResponse.getEntity(), StandardCharsets.UTF_8);
+                HttpClientResponseHandler<List<SsauApiGroupDataResponse>> postResponseHandler =
+                        createResponseHandler(new TypeReference<>() {});
 
-                        List<SsauApiGroupDataResponse> apiResponses = objectMapper.readValue(
-                                responseBody, new TypeReference<>() {}
-                        );
+                try {
+                    List<SsauApiGroupDataResponse> apiResponses = httpClient.execute(httpPost, postResponseHandler);
 
-                        for (SsauApiGroupDataResponse apiResponse : apiResponses) {
-                            groupDataList.add(new GroupData(apiResponse.text(), apiResponse.id().toString()));
-                        }
-                    } else {
-                        log.error("Failed to fetch group data. Status code: {}", postResponse.getCode());
+                    for (SsauApiGroupDataResponse apiResponse : apiResponses) {
+                        groupDataList.add(new GroupData(apiResponse.text(), apiResponse.id().toString()));
                     }
                 } catch (Exception e) {
                     log.error("Error processing pattern {}: {}", pattern, e.getMessage());
                 }
             }
+
 
         } catch (Exception e) {
             log.error("Error fetching group data", e);

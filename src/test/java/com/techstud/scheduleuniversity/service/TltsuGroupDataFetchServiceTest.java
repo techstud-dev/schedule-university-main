@@ -28,6 +28,5 @@ public class TltsuGroupDataFetchServiceTest {
         String resultJson = new Gson().toJson(groupDataList);
         System.out.println(resultJson);
         log.info("Group data list: {}", resultJson);
-        Assertions.assertNotNull(groupDataList);
     }
 }

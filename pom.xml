@@ -195,11 +195,6 @@
             <artifactId>spring-boot-starter-quartz</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.python</groupId>
-            <artifactId>jython</artifactId>
-            <version>2.7.4</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
             <artifactId>httpclient5</artifactId>
             <version>5.4.1</version>
@@ -209,7 +204,7 @@
             <artifactId>jsoup</artifactId>
             <version>${jsoup.version}</version>
         </dependency>
-                <!--SECURITY-->
+        <!--SECURITY-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>

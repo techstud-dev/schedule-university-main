@@ -12,9 +12,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.createResponseHandler;
@@ -26,6 +24,7 @@ public class NsuGroupDataFetchService implements GroupFetcherService {
     @Override
     public List<GroupData> fetchGroupsData() {
         List<GroupData> groupDataList = new ArrayList<>();
+        Set<String> seenGroupIds = new HashSet<>();
         String baseUrl = "https://table.nsu.ru/faculties";
 
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
@@ -38,7 +37,7 @@ public class NsuGroupDataFetchService implements GroupFetcherService {
             for (Element faculty : faculties) {
                 String facultyLink = faculty.attr("href");
                 if (!facultyLink.isEmpty()) {
-                    parseFacultyGroups(httpClient, facultyLink, groupDataList);
+                    parseFacultyGroups(httpClient, facultyLink, groupDataList, seenGroupIds);
                 }
             }
 
@@ -51,7 +50,8 @@ public class NsuGroupDataFetchService implements GroupFetcherService {
                 .collect(Collectors.toList());
     }
 
-    private void parseFacultyGroups(CloseableHttpClient httpClient, String facultyLink, List<GroupData> groupDataList) {
+    private void parseFacultyGroups(CloseableHttpClient httpClient, String facultyLink,
+                                    List<GroupData> groupDataList, Set<String> seenGroupIds) {
         String facultyUrl = "https://table.nsu.ru" + facultyLink;
 
         try {
@@ -67,7 +67,10 @@ public class NsuGroupDataFetchService implements GroupFetcherService {
 
                 if (!groupCode.isEmpty() && groupHref.startsWith("/group/")) {
                     String universityGroupId = groupHref.replace("/group/", "");
-                    groupDataList.add(new GroupData(groupCode, universityGroupId));
+
+                    if (seenGroupIds.add(universityGroupId)) {
+                        groupDataList.add(new GroupData(groupCode, universityGroupId));
+                    }
                 }
             }
 

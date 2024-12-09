@@ -63,7 +63,7 @@ public class MephiGroupDataFetchService implements GroupFetcherService {
             log.error("Error fetching group data from MEPHI", e);
         }
 
-        return  groupDataList.stream()
+        return groupDataList.stream()
                 .sorted(Comparator.comparing(GroupData::universityGroupId))
                 .collect(Collectors.toList());
     }

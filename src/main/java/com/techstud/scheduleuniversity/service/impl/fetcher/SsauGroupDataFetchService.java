@@ -98,7 +98,8 @@ public class SsauGroupDataFetchService implements GroupFetcherService {
                 httpPost.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8));
 
                 HttpClientResponseHandler<List<SsauApiGroupDataResponse>> postResponseHandler =
-                        createResponseHandler(new TypeReference<>() {});
+                        createResponseHandler(new TypeReference<>() {
+                        });
 
                 try {
                     List<SsauApiGroupDataResponse> apiResponses = httpClient.execute(httpPost, postResponseHandler);

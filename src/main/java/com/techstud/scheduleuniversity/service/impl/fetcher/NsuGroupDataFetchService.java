@@ -41,11 +41,11 @@ public class NsuGroupDataFetchService implements GroupFetcherService {
                 }
             }
 
-            } catch (Exception e) {
-                log.error("Error processing pattern {}", e.getMessage());
-            }
+        } catch (Exception e) {
+            log.error("Error processing pattern {}", e.getMessage());
+        }
 
-        return  groupDataList.stream()
+        return groupDataList.stream()
                 .sorted(Comparator.comparing(GroupData::universityGroupId))
                 .collect(Collectors.toList());
     }

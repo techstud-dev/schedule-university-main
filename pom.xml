@@ -27,7 +27,7 @@
         <springdoc.version>2.6.0</springdoc.version>
         <jwt.version>0.12.6</jwt.version>
         <testcontainers.version>1.20.4</testcontainers.version>
-        <spring-doc.version>2.6.0</spring-doc.version>
+        <spring-doc.version>2.7.0</spring-doc.version>
         <jsoup.version>1.18.1</jsoup.version>
     </properties>
 

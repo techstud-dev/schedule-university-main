@@ -30,7 +30,8 @@ public class SseuGroupDataFetchService implements GroupFetcherService {
             httpGet.setHeader("Accept", "application/json");
 
             HttpClientResponseHandler<List<SseuApiGroupDataResponse>> responseHandler =
-                    createResponseHandler(new TypeReference<>() {});
+                    createResponseHandler(new TypeReference<>() {
+                    });
 
             List<SseuApiGroupDataResponse> apiResponses = httpClient.execute(httpGet, responseHandler);
 

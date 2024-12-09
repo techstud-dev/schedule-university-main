@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.StreamSupport;
 
 import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.unchecked;
@@ -56,8 +58,8 @@ public class TltsuGroupDataFetchService implements GroupFetcherService {
         List<GroupData> groupDataList = new ArrayList<>();
         String link = "https://its.tltsu.ru/api/groups/course/"
                 + URLEncoder.encode(courseName, StandardCharsets.UTF_8)
-                    + "/institute/"
-                        + URLEncoder.encode(String.valueOf(groupId), StandardCharsets.UTF_8);
+                + "/institute/"
+                + URLEncoder.encode(String.valueOf(groupId), StandardCharsets.UTF_8);
         JsonNode jsonNode = objectMapper.readTree(returnHttpResponse(link).toString());
         jsonNode.forEach(node -> {
             GroupData groupData = new GroupData(
@@ -69,7 +71,7 @@ public class TltsuGroupDataFetchService implements GroupFetcherService {
         return groupDataList;
     }
 
-    private  List<TltsuApiGroupDataResponse> returnCourseInfo(int idUnversity) throws JsonProcessingException {
+    private List<TltsuApiGroupDataResponse> returnCourseInfo(int idUnversity) throws JsonProcessingException {
         List<TltsuApiGroupDataResponse> courseInfo = new ArrayList<>();
         String link = "https://its.tltsu.ru/api/courses/institute/" + idUnversity;
         JsonNode jsonNode = objectMapper.readTree(returnHttpResponse(link).toString());
@@ -82,7 +84,8 @@ public class TltsuGroupDataFetchService implements GroupFetcherService {
         );
         return courseInfo;
     }
-    private StringBuilder returnHttpResponse(String link){
+
+    private StringBuilder returnHttpResponse(String link) {
         StringBuilder responseBody = new StringBuilder();
         try (CloseableHttpClient httpClient = createDefault()) {
             HttpGet httpGet = new HttpGet(link);
@@ -95,7 +98,7 @@ public class TltsuGroupDataFetchService implements GroupFetcherService {
                 return EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
             };
             return responseBody.append(httpClient.execute(httpGet, responseHandler));
-        } catch(Exception e){
+        } catch (Exception e) {
             log.error("Error fetching group data from TLTSU", e);
             throw new RuntimeException(e);
         }

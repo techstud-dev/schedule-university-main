@@ -12,7 +12,9 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.techstud.scheduleuniversity.util.FetcherHttpUtils.createResponseHandler;
@@ -57,7 +59,7 @@ public class MiitGroupDataFetchService implements GroupFetcherService {
             log.error("Error fetching group data from MIIT", e);
         }
 
-        return  groupDataList.stream()
+        return groupDataList.stream()
                 .sorted(Comparator.comparing(GroupData::universityGroupId))
                 .collect(Collectors.toList());
     }

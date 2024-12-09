@@ -55,17 +55,17 @@ public class SpbstuGroupDataFetchService implements GroupFetcherService {
         try {
             HttpGet httpGet = new HttpGet(facultyUrl);
 
-                String responseBody = httpClient.execute(httpGet, createResponseHandler(String.class, true));
-                Document document = Jsoup.parse(responseBody);
+            String responseBody = httpClient.execute(httpGet, createResponseHandler(String.class, true));
+            Document document = Jsoup.parse(responseBody);
 
-                Elements elements = document.select("li.groups-list__item > a.groups-list__link");
-                for (Element element : elements) {
-                    String href = element.attr("href");
-                    String groupId = element.text();
-                    String universityGroupId = href.replace(facultyLink + "/", "");
+            Elements elements = document.select("li.groups-list__item > a.groups-list__link");
+            for (Element element : elements) {
+                String href = element.attr("href");
+                String groupId = element.text();
+                String universityGroupId = href.replace(facultyLink + "/", "");
 
-                    groupDataList.add(new GroupData(groupId, universityGroupId));
-                }
+                groupDataList.add(new GroupData(groupId, universityGroupId));
+            }
 
         } catch (Exception e) {
             log.error(e.getMessage());

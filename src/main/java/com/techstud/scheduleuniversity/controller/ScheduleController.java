@@ -4,6 +4,7 @@ import com.techstud.scheduleuniversity.annotation.RateLimit;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.ImportDto;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObjectApiResponse;
@@ -14,6 +15,7 @@ import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import com.techstud.scheduleuniversity.swagger.ApiRequestImportDto;
 import com.techstud.scheduleuniversity.util.ApiResponseConverter;
+import com.techstud.scheduleuniversity.swagger.ApiRequestSaveDto;
 import com.techstud.scheduleuniversity.validation.RequestValidationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -132,11 +134,42 @@ public class ScheduleController {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @PostMapping
+    @Operation(
+            summary = "Запрос на сохранение расписания",
+            description = "Принимает JSON с расписанием, сохраняет данные в каскадном формате и привязывает" +
+                    " Mongo ID расписания к пользователю.",
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            description = "Успешное сохранение расписания",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class))),
+                    @ApiResponse(responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = """
+                                            {\
+                                              "systemName": "tchs",
+                                             \
+                                              "applicationName": "schedule-university-main",
+                                             \
+                                              "message": "Unauthorized"
+                                            }"""))),}
+    )
+    @PostMapping("/create")
     @PreAuthorize("hasRole('USER')")
-    public EntityModel<ScheduleApiResponse> createSchedule(@RequestBody ApiRequest<Object> saveObject,
+    public EntityModel<ScheduleApiResponse> createSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Данные для сохранения расписания",
+            required = true,
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ApiRequestSaveDto.class)))
+                                                               @RequestBody ApiRequest<ScheduleParserResponse> saveObject,
                                                            @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        log.info("Incoming request to save schedule, body: {}, user: {}", saveObject, principal.getName());
+        ScheduleDocument documentSchedule =
+                scheduleService.createSchedule(saveObject.getData(), principal.getName());
+        ScheduleApiResponse schedule = scheduleMapper.toResponse(documentSchedule);
+        return EntityModel.of(schedule);
     }
 
     @PutMapping("/{scheduleId}")

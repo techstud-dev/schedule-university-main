@@ -5,6 +5,8 @@ import com.techstud.scheduleuniversity.dao.entity.Student;
 import com.techstud.scheduleuniversity.dao.entity.UniversityGroup;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
@@ -21,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -65,6 +68,26 @@ public class ScheduleServiceImpl implements ScheduleService {
             throw new ScheduleNotFoundException("Schedule not found for group " + importDto.getGroupCode());
         }
         return scheduleDocument;
+    }
+    @Override
+    @Transactional
+    public ScheduleDocument createSchedule(ScheduleParserResponse saveDto, String username) {
+        log.info("Saving schedule for user: {}", username);
+
+        ScheduleDocument savedDocument;
+
+        var student = studentRepository
+                .findByUsername(username)
+                .orElseGet(() -> studentRepository.save(new Student(username)));
+
+        savedDocument = scheduleRepositoryFacade.cascadeSave(saveDto);
+
+        student.setLastAction(LocalDate.now());
+        student.setScheduleMongoId(savedDocument.getId());
+
+        studentRepository.save(student);
+
+        return savedDocument;
     }
 
     @Override

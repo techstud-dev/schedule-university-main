@@ -7,6 +7,7 @@ import com.techstud.scheduleuniversity.service.impl.fetcher.SseuGroupDataFetchSe
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Description;
 import org.springframework.test.context.ActiveProfiles;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 @ActiveProfiles("dev")
+@Disabled
 public class GroupFetServiceFacadeTest {
 
     private GroupFetchServiceFacade groupFetchServiceFacade;

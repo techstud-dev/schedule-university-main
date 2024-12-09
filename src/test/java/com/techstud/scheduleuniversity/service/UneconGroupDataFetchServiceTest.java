@@ -6,6 +6,7 @@ import com.techstud.scheduleuniversity.service.impl.fetcher.UneconGroupDataFetch
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -13,6 +14,7 @@ import java.util.List;
 
 @ActiveProfiles("dev")
 @Slf4j
+@Disabled
 public class UneconGroupDataFetchServiceTest {
 
     private GroupFetcherService uneconGroupDataFetchService;

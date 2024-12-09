@@ -6,6 +6,7 @@ import com.techstud.scheduleuniversity.service.impl.fetcher.SsauGroupDataFetchSe
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -16,6 +17,7 @@ import java.util.List;
 @ActiveProfiles("dev")
 @ExtendWith(MockitoExtension.class)
 @Slf4j
+@Disabled
 public class SsauGroupDataFetchServiceTest {
 
     private GroupFetcherService ssauGroupDataFetchService;

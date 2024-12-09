@@ -33,6 +33,7 @@ public class KafkaConsumer {
     public void listenParsingFailure(ConsumerRecord<String, String> consumerRecord) throws JsonProcessingException {
         String id = consumerRecord.key();
         String message = consumerRecord.value();
+        log.warn("Received failure message with id: {}, message:\n{}", id, message);
         messageObserver.registerResponse(UUID.fromString(id), message);
     }
 }

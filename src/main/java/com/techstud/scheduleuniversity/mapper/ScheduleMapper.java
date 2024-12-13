@@ -1,20 +1,24 @@
 package com.techstud.scheduleuniversity.mapper;
 
+import com.techstud.scheduleuniversity.controller.ScheduleController;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheetDocument;
-import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
-import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
-import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObjectApiResponse;
+import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleApiResponse;
+import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleItem;
 import com.techstud.scheduleuniversity.repository.mongo.TimeSheetRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Component
 @RequiredArgsConstructor
@@ -35,65 +39,131 @@ public class ScheduleMapper {
     private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    public ScheduleApiResponse toResponse(ScheduleDocument documentSchedule) {
-        return new ScheduleApiResponse(
-                mapDocumentWeek(documentSchedule.getEvenWeekSchedule()),
-                mapDocumentWeek(documentSchedule.getOddWeekSchedule()),
-                formatDate(documentSchedule.getSnapshotDate())
-        );
+    @SneakyThrows
+    public EntityModel<ScheduleApiResponse> toResponse(ScheduleDocument documentSchedule) {
+        ScheduleApiResponse response = new ScheduleApiResponse();
+
+        List<EntityModel<ScheduleItem>> oddWeekSchedules = mapWeek(documentSchedule.getOddWeekSchedule(), false);
+        List<EntityModel<ScheduleItem>> evenWeekSchedules = mapWeek(documentSchedule.getEvenWeekSchedule(), true);
+
+        LocalDate snapshotDate = LocalDate.ofInstant(documentSchedule.getSnapshotDate().toInstant(), TimeZone.getDefault().toZoneId());
+        response.setEvenWeekSchedules(evenWeekSchedules);
+        response.setOddWeekSchedules(oddWeekSchedules);
+        response.setSnapshotDate(snapshotDate);
+
+        return EntityModel.of(response,
+                linkTo(
+                        methodOn(ScheduleController.class).getSchedule(documentSchedule.getId(), null))
+                        .withRel("getSchedule")
+                        .withType("GET"),
+                linkTo(
+                        methodOn(ScheduleController.class).updateSchedule(documentSchedule.getId(),
+                                null, null))
+                        .withRel("updateSchedule")
+                        .withType("PUT"),
+                linkTo(
+                        methodOn(ScheduleController.class).deleteSchedule(documentSchedule.getId(), null))
+                        .withRel("deleteSchedule")
+                        .withType("DELETE"),
+                linkTo(
+                        methodOn(ScheduleController.class).importSchedule(null,null))
+                        .withRel("importSchedule")
+                        .withType("POST"),
+                linkTo(
+                        methodOn(ScheduleController.class).forceImportSchedule(null,null))
+                        .withRel("forceImportSchedule")
+                        .withType("POST"),
+                linkTo(
+                        methodOn(ScheduleController.class).createSchedule(null, null))
+                        .withRel("createSchedule")
+                        .withType("POST")
+                );
     }
 
-    private Map<String, ScheduleDayApiResponse> mapDocumentWeek(Map<DayOfWeek, ScheduleDayDocument> documentWeek) {
-        Map<String, ScheduleDayApiResponse> response = new LinkedHashMap<>();
-        documentWeek.forEach((dayOfWeek, scheduleDay) ->
-                response.put(getRuDayOfWeek(dayOfWeek), mapDocumentDay(scheduleDay))
-        );
+
+    private List<EntityModel<ScheduleItem>> mapWeek(Map<DayOfWeek, ScheduleDayDocument> documentWeek, boolean isEven) {
+        List<EntityModel<ScheduleItem>> response = new ArrayList<>();
+        documentWeek.forEach((dayOfWeek, scheduleDay) -> {
+            scheduleDay.getLessons().forEach((timeSheetId, scheduleObjects) -> {
+                scheduleObjects.forEach(scheduleObject -> {
+                    ScheduleItem scheduleItem = new ScheduleItem();
+                    scheduleItem.setId(scheduleObject.getId());
+                    scheduleItem.setEven(isEven);
+                    scheduleItem.setDayOfWeek(RU_DAYS_OF_WEEK.get(dayOfWeek));
+                    scheduleItem.setDate(mapDate(scheduleDay.getDate(), dayOfWeek));
+                    scheduleItem.setTime(mapTime(timeSheetId));
+                    scheduleItem.setType(scheduleObject.getType().getRuName());
+                    scheduleItem.setName(scheduleObject.getName());
+                    scheduleItem.setTeacher(scheduleObject.getTeacher() == null ? "-" : scheduleObject.getTeacher());
+                    scheduleItem.setPlace(scheduleObject.getPlace());
+                    scheduleItem.setGroups(scheduleObject.getGroups());
+
+                    EntityModel<ScheduleItem> scheduleItemEntity = EntityModel.of(scheduleItem,
+                            linkTo(
+                                    methodOn(ScheduleController.class).getLesson(scheduleDay.getId(), timeSheetId,
+                                            null))
+                                    .withRel("getScheduleObject")
+                                    .withType("GET"),
+                            linkTo(
+                                    methodOn(ScheduleController.class).updateLesson(scheduleDay.getId(), timeSheetId,
+                                            null, null))
+                                    .withRel("updateScheduleObject")
+                                    .withType("PUT"),
+                            linkTo(
+                                    methodOn(ScheduleController.class).deleteLesson(scheduleDay.getId(), timeSheetId,
+                                            null))
+                                    .withRel("deleteScheduleObject")
+                                    .withType("DELETE"),
+                            linkTo(
+                                    methodOn(ScheduleController.class).saveLesson(null, null))
+                                    .withRel("createScheduleObject")
+                                    .withType("POST"),
+                            linkTo(
+                                    methodOn(ScheduleController.class).getScheduleDay(scheduleDay.getId(), null))
+                                    .withRel("getScheduleDay")
+                                    .withType("GET"),
+                            linkTo(
+                                    methodOn(ScheduleController.class).createScheduleDay(null, null))
+                                    .withRel("createScheduleDay")
+                                    .withType("POST"),
+                            linkTo(
+                                    methodOn(ScheduleController.class).updateScheduleDay(scheduleDay.getId(),
+                                            null, null))
+                                    .withRel("updateScheduleDay")
+                                    .withType("PUT"),
+                            linkTo(
+                                    methodOn(ScheduleController.class).deleteScheduleDay(scheduleDay.getId(), null))
+                                    .withRel("deleteScheduleDay")
+                                    .withType("DELETE")
+
+                    );
+                    response.add(scheduleItemEntity);
+                });
+            });
+        });
         return response;
     }
 
-    private ScheduleDayApiResponse mapDocumentDay(ScheduleDayDocument documentDay) {
-        return new ScheduleDayApiResponse(
-                formatDate(documentDay.getDate()),
-                mapDocumentLessons(documentDay.getLessons())
-        );
-    }
 
-    private Map<String, List<ScheduleObjectApiResponse>> mapDocumentLessons(Map<String, List<ScheduleObjectDocument>> documentLessons) {
-        Map<String, List<ScheduleObjectApiResponse>> response = new LinkedHashMap<>();
-        documentLessons.forEach((key, value) ->
-                timeSheetRepository.findById(key).ifPresent(timeSheet ->
-                        response.put(getTimeInterval(timeSheet), mapDocumentObjects(value))
-                )
-        );
-        return response;
-    }
-
-    private List<ScheduleObjectApiResponse> mapDocumentObjects(List<ScheduleObjectDocument> documentObjects) {
-        List<ScheduleObjectApiResponse> response = new ArrayList<>();
-        for (var documentObject : documentObjects) {
-            response.add(new ScheduleObjectApiResponse(
-                    documentObject.getType().getRuName(),
-                    documentObject.getName(),
-                    documentObject.getTeacher(),
-                    documentObject.getPlace(),
-                    documentObject.getGroups()
-            ));
-        }
-        return response;
-    }
-
-    private String getRuDayOfWeek(DayOfWeek dayOfWeek) {
-        return RU_DAYS_OF_WEEK.getOrDefault(dayOfWeek, "Неизвестный день");
-    }
-
-    private String formatDate(Date date) {
+    private long mapDate(Date date, DayOfWeek dayOfWeek) {
         if (date != null) {
-            return DATE_FORMATTER.format(date);
-        } else
-            return null;
+            return date.getTime();
+        } else {
+            Date currentDate = new Date();
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(currentDate);
+            int currentDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+            int daysDiff = dayOfWeek.getValue() - currentDayOfWeek;
+            Date resultDate = new Date(currentDate.getTime() +
+                    (long) daysDiff * 24 * 60 * 60 * 1000);
+            return resultDate.getTime();
+        }
     }
 
-    private String getTimeInterval(TimeSheetDocument timeSheet) {
-        return timeSheet.getFrom().format(TIME_FORMATTER) + " - " + timeSheet.getTo().format(TIME_FORMATTER);
+    private String mapTime(String timeSheetId) {
+        return timeSheetRepository.findById(timeSheetId)
+                .map(timeSheet -> timeSheet.getFrom().format(TIME_FORMATTER) + " - " +
+                        timeSheet.getTo().format(TIME_FORMATTER))
+                .orElse(null);
     }
 }

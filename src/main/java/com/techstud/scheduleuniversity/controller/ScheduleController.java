@@ -5,7 +5,7 @@ import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
-import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
+import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObjectApiResponse;
 import com.techstud.scheduleuniversity.exception.ParserException;
@@ -14,7 +14,6 @@ import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import com.techstud.scheduleuniversity.swagger.ApiRequestImportDto;
-import com.techstud.scheduleuniversity.util.ApiResponseConverter;
 import com.techstud.scheduleuniversity.swagger.ApiRequestSaveDto;
 import com.techstud.scheduleuniversity.validation.RequestValidationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,7 +44,6 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
     private final RequestValidationService requestValidationService;
     private final ScheduleMapper scheduleMapper;
-    private final ApiResponseConverter apiResponseConverter;
 
     @PostMapping("/import")
     @PreAuthorize("hasRole('USER')")
@@ -83,8 +81,7 @@ public class ScheduleController {
         requestValidationService.validateImportRequest(importRequest);
         ScheduleDocument documentSchedule =
                 scheduleService.importSchedule(importRequest.getData(), principal.getName());
-        ScheduleApiResponse schedule = scheduleMapper.toResponse(documentSchedule);
-        return apiResponseConverter.convertToEntityModel(schedule, documentSchedule);
+        return scheduleMapper.toResponse(documentSchedule);
     }
 
     @PostMapping("/forceImport")
@@ -123,8 +120,8 @@ public class ScheduleController {
         requestValidationService.validateImportRequest(importRequest);
         ScheduleDocument documentSchedule =
                 scheduleService.forceImportSchedule(importRequest.getData(), principal.getName());
-        ScheduleApiResponse schedule = scheduleMapper.toResponse(documentSchedule);
-        return apiResponseConverter.convertToEntityModel(schedule, documentSchedule);
+        EntityModel<ScheduleApiResponse> schedule = scheduleMapper.toResponse(documentSchedule);
+        return schedule;
     }
 
     @GetMapping("/{scheduleId}")
@@ -168,8 +165,8 @@ public class ScheduleController {
         log.info("Incoming request to save schedule, body: {}, user: {}", saveObject, principal.getName());
         ScheduleDocument documentSchedule =
                 scheduleService.createSchedule(saveObject.getData(), principal.getName());
-        ScheduleApiResponse schedule = scheduleMapper.toResponse(documentSchedule);
-        return EntityModel.of(schedule);
+        EntityModel<ScheduleApiResponse> schedule = scheduleMapper.toResponse(documentSchedule);
+        return schedule;
     }
 
     @PutMapping("/{scheduleId}")

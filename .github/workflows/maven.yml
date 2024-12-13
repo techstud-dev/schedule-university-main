@@ -21,22 +21,3 @@ jobs:
           cache: maven
       - name: Build with Maven
         run: mvn -B package --file pom.xml
-
-  assign-reviewers:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-      - name: Assign Backend Team as reviewers
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { octokit } = github;
-            const reviewers = ["techstud-dev/backend-team"]; 
-            await octokit.rest.pulls.requestReviewers({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-              team_reviewers: reviewers,
-            });

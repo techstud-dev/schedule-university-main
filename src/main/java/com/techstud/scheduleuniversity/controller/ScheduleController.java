@@ -1,9 +1,11 @@
 package com.techstud.scheduleuniversity.controller;
 
 import com.techstud.scheduleuniversity.annotation.RateLimit;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.ImportDto;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleDayParserResponse;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
@@ -11,6 +13,7 @@ import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObjectApiRe
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.RequestException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
+import com.techstud.scheduleuniversity.mapper.ScheduleDayMapper;
 import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import com.techstud.scheduleuniversity.swagger.ApiRequestImportDto;
@@ -44,6 +47,7 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
     private final RequestValidationService requestValidationService;
     private final ScheduleMapper scheduleMapper;
+    private final ScheduleDayMapper scheduleDayMapper;
 
     @PostMapping("/import")
     @PreAuthorize("hasRole('USER')")
@@ -193,9 +197,16 @@ public class ScheduleController {
 
     @PostMapping("/scheduleDay/")
     @PreAuthorize("hasRole('USER')")
-    public EntityModel<ScheduleDayApiResponse> createScheduleDay(@RequestBody ApiRequest<Object> saveObject,
+    public EntityModel<ScheduleDayApiResponse> createScheduleDay(@RequestBody ApiRequest<ScheduleDayParserResponse> saveObject,
                                                                  @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        log.info("Import schedule day, body: {}, user: {}", saveObject, principal.getName());
+        ScheduleDayDocument scheduleDayDocument = scheduleService.saveScheduleDay(
+                saveObject.getData(), principal.getName()
+        );
+        ScheduleDayApiResponse scheduleDayApiResponse = scheduleDayMapper.toResponse(
+                scheduleDayDocument
+        );
+        return EntityModel.of(scheduleDayApiResponse);
     }
 
     @PutMapping("/scheduleDay/{scheduleDayId}")

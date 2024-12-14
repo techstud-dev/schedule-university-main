@@ -3,6 +3,7 @@ package com.techstud.scheduleuniversity.mapper;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleObjectParserResponse;
 import com.techstud.scheduleuniversity.dto.ScheduleType;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObjectApiResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 
@@ -30,5 +31,42 @@ public class ScheduleObjectMapper {
         return list;
     }
 
+    public ScheduleObjectParserResponse toResponse(ScheduleObjectDocument scheduleObject) {
+         ScheduleObjectParserResponse scheduleObjectResult = new ScheduleObjectParserResponse();
+         scheduleObjectResult.setGroups(scheduleObject.getGroups());
+         scheduleObjectResult.setPlace(scheduleObject.getPlace());
+         scheduleObjectResult.setTeacher(scheduleObject.getTeacher());
+         scheduleObjectResult.setName(scheduleObject.getName());
+         scheduleObjectResult.setType(ScheduleType.valueOf(scheduleObject.getType().name()));
+         return scheduleObjectResult;
+    }
+
+    public List<ScheduleObjectParserResponse> toResponse(List<ScheduleObjectDocument> scheduleObjects) {
+         List<ScheduleObjectParserResponse> list = new ArrayList<>(scheduleObjects.size());
+         for (ScheduleObjectDocument scheduleObject : scheduleObjects) {
+             list.add(toResponse(scheduleObject));
+         }
+         return list;
+    }
+
+    public ScheduleObjectApiResponse toApiResponse(ScheduleObjectDocument scheduleObject){
+         ScheduleObjectApiResponse scheduleObjectResult = new ScheduleObjectApiResponse();
+         scheduleObjectResult.setGroups(scheduleObject.getGroups());
+         scheduleObjectResult.setPlace(scheduleObject.getPlace());
+         scheduleObjectResult.setTeacher(scheduleObject.getTeacher());
+         scheduleObjectResult.setName(scheduleObject.getName());
+        scheduleObjectResult.setType(scheduleObject.getType().toString());
+         return scheduleObjectResult;
+    }
+
+    public ScheduleObjectDocument fromApiResponse(ScheduleObjectApiResponse scheduleObjectApiResponse) {
+         ScheduleObjectDocument scheduleObjectDocument = new ScheduleObjectDocument();
+         scheduleObjectDocument.setGroups(scheduleObjectApiResponse.getGroups());
+         scheduleObjectDocument.setPlace(scheduleObjectApiResponse.getPlace());
+         scheduleObjectDocument.setTeacher(scheduleObjectApiResponse.getTeacher());
+         scheduleObjectDocument.setName(scheduleObjectApiResponse.getName());
+         scheduleObjectDocument.setType(ScheduleType.valueOf(scheduleObjectApiResponse.getType()));
+         return scheduleObjectDocument;
+    }
 
 }

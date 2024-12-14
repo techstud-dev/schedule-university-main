@@ -1,10 +1,12 @@
 package com.techstud.scheduleuniversity.service.impl;
 
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dao.entity.Student;
 import com.techstud.scheduleuniversity.dao.entity.UniversityGroup;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleDayParserResponse;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
@@ -13,6 +15,7 @@ import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
 import com.techstud.scheduleuniversity.repository.jpa.StudentRepository;
 import com.techstud.scheduleuniversity.repository.jpa.UniversityGroupRepository;
+import com.techstud.scheduleuniversity.repository.mongo.ScheduleDayRepository;
 import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepository;
 import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepositoryFacade;
 import com.techstud.scheduleuniversity.service.ScheduleService;
@@ -35,6 +38,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final KafkaProducer kafkaProducer;
     private final KafkaMessageObserver messageObserver;
     private final StudentRepository studentRepository;
+    private final ScheduleDayRepository scheduleDayRepository;
 
     @Override
     @Transactional
@@ -67,6 +71,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
         return scheduleDocument;
     }
+
     @Override
     @Transactional
     public ScheduleDocument createSchedule(ScheduleParserResponse saveDto, String username) {
@@ -126,4 +131,17 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
         return savedSchedule;
     }
+
+    @Override
+    public ScheduleDayDocument saveScheduleDay(ScheduleDayParserResponse saveDto, String userName) {
+
+        //Logic of work:
+        //Search input Day in Document Week
+        //if we find -> update and replace Day in Document Week
+            //else we not find -> insert and add new MongoId to User by userName
+
+
+        return null;
+    }
 }
+

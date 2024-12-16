@@ -143,6 +143,18 @@ public class ScheduleServiceImpl implements ScheduleService {
         return scheduleRepositoryFacade.smartScheduleDayDelete(schedule, scheduleDay);
     }
 
+    @Override
+    @Transactional
+    public ScheduleDocument deleteLesson(String scheduleDayId, String timeWindow, String username) throws ScheduleNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + username));
+
+
+        ScheduleDocument schedule = scheduleRepository.findById(student.getScheduleMongoId())
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found for id: " + student.getScheduleMongoId()));
+        return null;
+    }
+
     private ScheduleDocument fetchAndSaveSchedule(UniversityGroup group, Student student) throws ParserException {
         ScheduleDocument savedSchedule = null;
         ParsingTask parsingTask = ParsingTask.builder()

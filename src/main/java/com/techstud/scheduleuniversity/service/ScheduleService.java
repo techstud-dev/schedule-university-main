@@ -20,5 +20,6 @@ public interface ScheduleService {
     void deleteSchedule(String id, String username) throws ScheduleNotFoundException, StudentNotFoundException;
 
     ScheduleDocument deleteScheduleDay(String dayId, String username) throws ScheduleNotFoundException, StudentNotFoundException;
+    ScheduleDocument deleteLesson(String scheduleDayId, String timeWindow, String username) throws ScheduleNotFoundException, StudentNotFoundException;
 
 }

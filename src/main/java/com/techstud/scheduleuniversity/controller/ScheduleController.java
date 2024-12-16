@@ -242,11 +242,12 @@ public class ScheduleController {
 
     @DeleteMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
     @PreAuthorize("hasRole('USER')")
-    public EntityModel<Void> deleteLesson(@PathVariable String scheduleDayId,
+    public EntityModel<ScheduleApiResponse> deleteLesson(@PathVariable String scheduleDayId,
                                           @PathVariable String timeWindow,
                                           @Parameter(hidden = true) Principal principal) {
         log.info("Incoming request to delete lesson, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
-        return null;
+        ScheduleDocument updatedSchedule = scheduleService.deleteLesson(scheduleDayId, timeWindow, principal.getName());
+        return scheduleMapper.toResponse(updatedSchedule);
     }
 
 }

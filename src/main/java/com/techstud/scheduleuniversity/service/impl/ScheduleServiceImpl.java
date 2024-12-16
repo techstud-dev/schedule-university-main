@@ -1,5 +1,6 @@
 package com.techstud.scheduleuniversity.service.impl;
 
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dao.entity.Student;
 import com.techstud.scheduleuniversity.dao.entity.UniversityGroup;
@@ -9,10 +10,12 @@ import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserRespons
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
+import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
 import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
 import com.techstud.scheduleuniversity.repository.jpa.StudentRepository;
 import com.techstud.scheduleuniversity.repository.jpa.UniversityGroupRepository;
+import com.techstud.scheduleuniversity.repository.mongo.ScheduleDayRepository;
 import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepository;
 import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepositoryFacade;
 import com.techstud.scheduleuniversity.service.ScheduleService;
@@ -35,6 +38,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final KafkaProducer kafkaProducer;
     private final KafkaMessageObserver messageObserver;
     private final StudentRepository studentRepository;
+    private final ScheduleDayRepository scheduleDayRepository;
 
     @Override
     @Transactional
@@ -103,6 +107,40 @@ public class ScheduleServiceImpl implements ScheduleService {
             throw new ScheduleNotFoundException("Schedule not found for group " + importDto.getGroupCode());
         }
         return scheduleDocument;
+    }
+
+    @Override
+    @Transactional
+    public void deleteSchedule(String scheduleId, String username) throws ScheduleNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + username));
+
+        String scheduleDbId = student.getScheduleMongoId();
+
+        if (!scheduleDbId.equals(scheduleId)) {
+            throw new RuntimeException("Schedule scheduleId does not match student's schedule scheduleId");
+        }
+
+        scheduleRepository.deleteById(scheduleId);
+        student.setScheduleMongoId(null);
+        studentRepository.save(student);
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument deleteScheduleDay(String dayId, String username) throws ScheduleNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + username));
+
+        String scheduleId = student.getScheduleMongoId();
+
+        ScheduleDocument schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found for id: " + scheduleId));
+
+        ScheduleDayDocument scheduleDay = scheduleDayRepository.findById(dayId)
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule day not found for id: " + dayId));
+
+        return scheduleRepositoryFacade.smartScheduleDayDelete(schedule, scheduleDay);
     }
 
     private ScheduleDocument fetchAndSaveSchedule(UniversityGroup group, Student student) throws ParserException {

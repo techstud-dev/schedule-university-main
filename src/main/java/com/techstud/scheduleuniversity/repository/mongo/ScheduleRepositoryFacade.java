@@ -62,6 +62,23 @@ public class ScheduleRepositoryFacade {
         }
     }
 
+    public ScheduleDocument smartScheduleDayDelete(ScheduleDocument scheduleDocument, ScheduleDayDocument scheduleDayDocument) {
+        try {
+            scheduleDocument.getEvenWeekSchedule().values().removeIf(scheduleDay ->
+                    scheduleDay.getId().equals(scheduleDayDocument.getId()));
+            scheduleDocument.getOddWeekSchedule().values().removeIf(scheduleDay ->
+                    scheduleDay.getId().equals(scheduleDayDocument.getId()));
+
+            scheduleDayRepository.delete(scheduleDayDocument);
+            scheduleDocument.setId(null);
+            scheduleDocument.setHash(null);
+
+            return findOrSave(scheduleDocument, ScheduleDocument.class, scheduleRepository);
+        } catch (Exception e) {
+            throw new RuntimeException("Error smart delete schedule day", e);
+        }
+    }
+
     private Map<DayOfWeek, ScheduleDayDocument> cascadeWeekSave(Map<DayOfWeek, ScheduleDayParserResponse> weekSchedule) {
         Map<DayOfWeek, ScheduleDayDocument> result = new LinkedHashMap<>();
         weekSchedule.forEach((dayOfWeek, scheduleDayDto) -> {

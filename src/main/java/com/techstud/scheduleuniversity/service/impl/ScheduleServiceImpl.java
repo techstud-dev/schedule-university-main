@@ -143,8 +143,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         String scheduleId = student.getScheduleMongoId();
 
-        ScheduleDocument schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found for id: " + scheduleId));
+        ScheduleDocument schedule = getScheduleById(scheduleId);
 
         ScheduleDayDocument scheduleDay = scheduleDayRepository.findById(dayId)
                 .orElseThrow(() -> new ScheduleNotFoundException("Schedule day not found for id: " + dayId));
@@ -159,10 +158,26 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + username));
 
 
-        ScheduleDocument schedule = scheduleRepository.findById(student.getScheduleMongoId())
-                .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found for id: " + student.getScheduleMongoId()));
+        ScheduleDocument schedule = getScheduleById(student.getScheduleMongoId());
 
         return scheduleRepositoryFacade.smartLessonDelete(schedule, scheduleDayId, timeWindowId);
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument getScheduleById(String scheduleId) throws ScheduleNotFoundException {
+        return scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found for id: " + scheduleId));
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument getScheduleByStudentName(String studentName) throws ScheduleNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.findByUsername(studentName)
+                .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + studentName));
+
+        return scheduleRepository.findById(student.getScheduleMongoId())
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found for student: " + studentName));
     }
 
     private ScheduleDocument fetchAndSaveSchedule(UniversityGroup group, Student student) throws ParserException {

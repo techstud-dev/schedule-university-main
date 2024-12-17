@@ -3,6 +3,7 @@ package com.techstud.scheduleuniversity.mapper;
 import com.techstud.scheduleuniversity.controller.ScheduleController;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleItem;
 import com.techstud.scheduleuniversity.repository.mongo.TimeSheetRepository;
@@ -38,6 +39,25 @@ public class ScheduleMapper {
 
     private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+
+    @SneakyThrows
+    public  List<EntityModel<ScheduleItem>> toResponse(ScheduleDocument documentSchedule,
+                                                      String scheduleDayId,
+                                                      String timeWindowId) {
+        ScheduleApiResponse response = new ScheduleApiResponse();
+        var oddWeekSchedulesDocument = documentSchedule.getOddWeekSchedule();
+        var evenWeekSchedulesDocument = documentSchedule.getEvenWeekSchedule();
+        oddWeekSchedulesDocument.values().removeIf(scheduleDayDocument -> !scheduleDayDocument.getId().equals(scheduleDayId));
+        evenWeekSchedulesDocument.values().removeIf(scheduleDayDocument -> !scheduleDayDocument.getId().equals(scheduleDayId));
+
+        List<EntityModel<ScheduleItem>> result;
+        if (!oddWeekSchedulesDocument.isEmpty()) {
+            result = mapWeek(oddWeekSchedulesDocument, false);
+        } else {
+            result = mapWeek(evenWeekSchedulesDocument, true);
+        }
+        return result;
+    }
 
     @SneakyThrows
     public EntityModel<ScheduleApiResponse> toResponse(ScheduleDocument documentSchedule) {

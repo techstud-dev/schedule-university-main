@@ -5,9 +5,10 @@ import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
-import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObjectApiResponse;
+import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleApiResponse;
+import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleItem;
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.RequestException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
@@ -127,8 +128,9 @@ public class ScheduleController {
     @GetMapping("/{scheduleId}")
     @PreAuthorize("hasRole('USER')")
     public EntityModel<ScheduleApiResponse> getSchedule(@PathVariable String scheduleId,
-                                                        @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+                                                        @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException {
+        ScheduleDocument documentSchedule = scheduleService.getScheduleById(scheduleId);
+        return scheduleMapper.toResponse(documentSchedule);
     }
 
     @Operation(
@@ -210,7 +212,7 @@ public class ScheduleController {
     @DeleteMapping("/scheduleDay/{scheduleDayId}")
     @PreAuthorize("hasRole('USER')")
     public EntityModel<ScheduleApiResponse> deleteScheduleDay(@PathVariable String scheduleDayId,
-                                               @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+                                                              @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to delete schedule day, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
         ScheduleDocument updatedSchedule = scheduleService.deleteScheduleDay(scheduleDayId, principal.getName());
         return scheduleMapper.toResponse(updatedSchedule);
@@ -218,10 +220,12 @@ public class ScheduleController {
 
     @GetMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
     @PreAuthorize("hasRole('USER')")
-    public EntityModel<List<ScheduleObjectApiResponse>> getLesson(@PathVariable String scheduleDayId,
-                                                                  @PathVariable String timeWindow,
-                                                                  @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public  List<EntityModel<ScheduleItem>> getLesson(@PathVariable String scheduleDayId,
+                                                     @PathVariable String timeWindowId,
+                                                     @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+        log.info("Incoming request to get lesson, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
+        ScheduleDocument scheduleDocument = scheduleService.getScheduleByStudentName(principal.getName());
+        return scheduleMapper.toResponse(scheduleDocument, scheduleDayId, timeWindowId);
     }
 
     @PostMapping("/scheduleDay/lesson/")

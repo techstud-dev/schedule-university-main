@@ -221,8 +221,8 @@ public class ScheduleController {
     @GetMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
     @PreAuthorize("hasRole('USER')")
     public  List<EntityModel<ScheduleItem>> getLesson(@PathVariable String scheduleDayId,
-                                                     @PathVariable String timeWindowId,
-                                                     @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+                                                      @PathVariable String timeWindowId,
+                                                      @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to get lesson, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
         ScheduleDocument scheduleDocument = scheduleService.getScheduleByStudentName(principal.getName());
         return scheduleMapper.toResponse(scheduleDocument, scheduleDayId, timeWindowId);
@@ -253,5 +253,4 @@ public class ScheduleController {
         ScheduleDocument updatedSchedule = scheduleService.deleteLesson(scheduleDayId, timeWindowId, principal.getName());
         return scheduleMapper.toResponse(updatedSchedule);
     }
-
 }

@@ -41,14 +41,35 @@ public class ScheduleMapper {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     @SneakyThrows
-    public  List<EntityModel<ScheduleItem>> toResponse(ScheduleDocument documentSchedule,
+    public List<EntityModel<ScheduleItem>> toResponse(ScheduleDocument documentSchedule,
                                                       String scheduleDayId,
                                                       String timeWindowId) {
-        ScheduleApiResponse response = new ScheduleApiResponse();
+        //FIXME: Caused by: java.lang.IllegalArgumentException: No variable named timeWindowId found!
         var oddWeekSchedulesDocument = documentSchedule.getOddWeekSchedule();
         var evenWeekSchedulesDocument = documentSchedule.getEvenWeekSchedule();
-        oddWeekSchedulesDocument.values().removeIf(scheduleDayDocument -> !scheduleDayDocument.getId().equals(scheduleDayId));
-        evenWeekSchedulesDocument.values().removeIf(scheduleDayDocument -> !scheduleDayDocument.getId().equals(scheduleDayId));
+
+        oddWeekSchedulesDocument.values().removeIf(scheduleDayDocument ->
+                !scheduleDayDocument.getId().equals(scheduleDayId));
+        evenWeekSchedulesDocument.values().removeIf(scheduleDayDocument ->
+                !scheduleDayDocument.getId().equals(scheduleDayId));
+
+        oddWeekSchedulesDocument.values().forEach(scheduleDayDocument -> {
+
+            scheduleDayDocument.getLessons().entrySet().removeIf(entry -> !timeWindowId.equals(entry.getKey()));
+
+
+            scheduleDayDocument.getLessons().forEach((tw, scheduleObjects) -> {
+                scheduleObjects.removeIf(obj -> !obj.getId().equals(timeWindowId));
+            });
+        });
+
+        evenWeekSchedulesDocument.values().forEach(scheduleDayDocument -> {
+
+            scheduleDayDocument.getLessons().entrySet().removeIf(entry -> !timeWindowId.equals(entry.getKey()));
+            scheduleDayDocument.getLessons().forEach((tw, scheduleObjects) -> {
+                scheduleObjects.removeIf(obj -> !obj.getId().equals(timeWindowId));
+            });
+        });
 
         List<EntityModel<ScheduleItem>> result;
         if (!oddWeekSchedulesDocument.isEmpty()) {
@@ -58,6 +79,7 @@ public class ScheduleMapper {
         }
         return result;
     }
+
 
     @SneakyThrows
     public EntityModel<ScheduleApiResponse> toResponse(ScheduleDocument documentSchedule) {
@@ -104,14 +126,14 @@ public class ScheduleMapper {
     private List<EntityModel<ScheduleItem>> mapWeek(Map<DayOfWeek, ScheduleDayDocument> documentWeek, boolean isEven) {
         List<EntityModel<ScheduleItem>> response = new ArrayList<>();
         documentWeek.forEach((dayOfWeek, scheduleDay) -> {
-            scheduleDay.getLessons().forEach((timeSheetId, scheduleObjects) -> {
+            scheduleDay.getLessons().forEach((timeWindowId, scheduleObjects) -> {
                 scheduleObjects.forEach(scheduleObject -> {
                     ScheduleItem scheduleItem = new ScheduleItem();
                     scheduleItem.setId(scheduleObject.getId());
                     scheduleItem.setEven(isEven);
                     scheduleItem.setDayOfWeek(RU_DAYS_OF_WEEK.get(dayOfWeek));
                     scheduleItem.setDate(mapDate(scheduleDay.getDate(), dayOfWeek));
-                    scheduleItem.setTime(mapTime(timeSheetId));
+                    scheduleItem.setTime(mapTime(timeWindowId));
                     scheduleItem.setType(scheduleObject.getType().getRuName());
                     scheduleItem.setName(scheduleObject.getName());
                     scheduleItem.setTeacher(scheduleObject.getTeacher() == null ? "-" : scheduleObject.getTeacher());
@@ -120,17 +142,17 @@ public class ScheduleMapper {
                     try {
                         EntityModel<ScheduleItem> scheduleItemEntity = EntityModel.of(scheduleItem,
                                 linkTo(
-                                        methodOn(ScheduleController.class).getLesson(scheduleDay.getId(), timeSheetId,
+                                        methodOn(ScheduleController.class).getLesson(scheduleDay.getId(), timeWindowId,
                                                 null))
                                         .withRel("getScheduleObject")
                                         .withType("GET"),
                                 linkTo(
-                                        methodOn(ScheduleController.class).updateLesson(scheduleDay.getId(), timeSheetId,
+                                        methodOn(ScheduleController.class).updateLesson(scheduleDay.getId(), timeWindowId,
                                                 null, null))
                                         .withRel("updateScheduleObject")
                                         .withType("PUT"),
                                 linkTo(
-                                        methodOn(ScheduleController.class).deleteLesson(scheduleDay.getId(), timeSheetId,
+                                        methodOn(ScheduleController.class).deleteLesson(scheduleDay.getId(), timeWindowId,
                                                 null))
                                         .withRel("deleteScheduleObject")
                                         .withType("DELETE"),

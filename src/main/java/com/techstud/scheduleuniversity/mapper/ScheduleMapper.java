@@ -9,6 +9,7 @@ import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleItem;
 import com.techstud.scheduleuniversity.repository.mongo.TimeSheetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ScheduleMapper {
 
     private final TimeSheetRepository timeSheetRepository;
@@ -37,7 +39,6 @@ public class ScheduleMapper {
             DayOfWeek.SUNDAY, "Воскресенье"
     );
 
-    private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     @SneakyThrows
@@ -142,7 +143,7 @@ public class ScheduleMapper {
                     try {
                         EntityModel<ScheduleItem> scheduleItemEntity = EntityModel.of(scheduleItem,
                                 linkTo(
-                                        methodOn(ScheduleController.class).getLesson(scheduleDay.getId(), timeWindowId,
+                                        methodOn(ScheduleController.class).getLesson(scheduleDay.getId().toString(), timeWindowId,
                                                 null))
                                         .withRel("getScheduleObject")
                                         .withType("GET"),
@@ -181,7 +182,7 @@ public class ScheduleMapper {
                         );
                         response.add(scheduleItemEntity);
                     } catch (Exception e) {
-                        throw new RuntimeException("Error while creating links", e);
+                        log.error("Error while creating links", e);
                     }
                 });
             });

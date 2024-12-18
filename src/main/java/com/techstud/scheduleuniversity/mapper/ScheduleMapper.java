@@ -3,17 +3,18 @@ package com.techstud.scheduleuniversity.mapper;
 import com.techstud.scheduleuniversity.controller.ScheduleController;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
-import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleApiResponse;
-import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleItem;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
+import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
+import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
 import com.techstud.scheduleuniversity.repository.mongo.TimeSheetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Component;
 
-import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -42,33 +43,30 @@ public class ScheduleMapper {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     @SneakyThrows
-    public List<EntityModel<ScheduleItem>> toResponse(ScheduleDocument documentSchedule,
-                                                      String scheduleDayId,
-                                                      String timeWindowId) {
-        //FIXME: Caused by: java.lang.IllegalArgumentException: No variable named timeWindowId found!
+    public CollectionModel<EntityModel<ScheduleItem>> toResponse(ScheduleDocument documentSchedule,
+                                                                 String scheduleDayId,
+                                                                 String timeWindowId) {
         var oddWeekSchedulesDocument = documentSchedule.getOddWeekSchedule();
         var evenWeekSchedulesDocument = documentSchedule.getEvenWeekSchedule();
 
-        oddWeekSchedulesDocument.values().removeIf(scheduleDayDocument ->
-                !scheduleDayDocument.getId().equals(scheduleDayId));
-        evenWeekSchedulesDocument.values().removeIf(scheduleDayDocument ->
-                !scheduleDayDocument.getId().equals(scheduleDayId));
+        oddWeekSchedulesDocument.entrySet().removeIf(entry -> !entry.getValue().getId().equals(scheduleDayId));
+        evenWeekSchedulesDocument.entrySet().removeIf(entry -> !entry.getValue().getId().equals(scheduleDayId));
 
-        oddWeekSchedulesDocument.values().forEach(scheduleDayDocument -> {
-
-            scheduleDayDocument.getLessons().entrySet().removeIf(entry -> !timeWindowId.equals(entry.getKey()));
-
-
-            scheduleDayDocument.getLessons().forEach((tw, scheduleObjects) -> {
-                scheduleObjects.removeIf(obj -> !obj.getId().equals(timeWindowId));
+        oddWeekSchedulesDocument.forEach((dayOfWeek, scheduleDay) -> {
+            var lessons = new HashMap<>(scheduleDay.getLessons());
+            lessons.forEach((timeWindowId1, scheduleObjects) -> {
+                if (!timeWindowId1.equals(timeWindowId)) {
+                    scheduleDay.getLessons().remove(timeWindowId1); // Безопасное удаление
+                }
             });
         });
 
-        evenWeekSchedulesDocument.values().forEach(scheduleDayDocument -> {
-
-            scheduleDayDocument.getLessons().entrySet().removeIf(entry -> !timeWindowId.equals(entry.getKey()));
-            scheduleDayDocument.getLessons().forEach((tw, scheduleObjects) -> {
-                scheduleObjects.removeIf(obj -> !obj.getId().equals(timeWindowId));
+        evenWeekSchedulesDocument.forEach((dayOfWeek, scheduleDay) -> {
+            var lessons = new HashMap<>(scheduleDay.getLessons());
+            lessons.forEach((timeWindowId1, scheduleObjects) -> {
+                if (!timeWindowId1.equals(timeWindowId)) {
+                    scheduleDay.getLessons().remove(timeWindowId1); // Безопасное удаление
+                }
             });
         });
 
@@ -78,8 +76,9 @@ public class ScheduleMapper {
         } else {
             result = mapWeek(evenWeekSchedulesDocument, true);
         }
-        return result;
+        return CollectionModel.of(result);
     }
+
 
 
     @SneakyThrows
@@ -140,8 +139,10 @@ public class ScheduleMapper {
                     scheduleItem.setTeacher(scheduleObject.getTeacher() == null ? "-" : scheduleObject.getTeacher());
                     scheduleItem.setPlace(scheduleObject.getPlace());
                     scheduleItem.setGroups(scheduleObject.getGroups());
+
+                    EntityModel<ScheduleItem> scheduleItemEntity = null;
                     try {
-                        EntityModel<ScheduleItem> scheduleItemEntity = EntityModel.of(scheduleItem,
+                        scheduleItemEntity = EntityModel.of(scheduleItem,
                                 linkTo(
                                         methodOn(ScheduleController.class).getLesson(scheduleDay.getId().toString(), timeWindowId,
                                                 null))
@@ -178,17 +179,15 @@ public class ScheduleMapper {
                                         methodOn(ScheduleController.class).deleteScheduleDay(scheduleDay.getId(), null))
                                         .withRel("deleteScheduleDay")
                                         .withType("DELETE")
-
                         );
-                        response.add(scheduleItemEntity);
-                    } catch (Exception e) {
-                        log.error("Error while creating links", e);
-                    }
+                    } catch (ScheduleNotFoundException | StudentNotFoundException ignored) {}
+                    response.add(scheduleItemEntity);
                 });
             });
         });
         return response;
     }
+
 
 
     private long mapDate(Date date, DayOfWeek dayOfWeek) {

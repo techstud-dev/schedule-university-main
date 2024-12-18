@@ -216,7 +216,9 @@ public class ScheduleServiceImpl implements ScheduleService {
             var parserSchedule = messageObserver.waitForParserResponse(uuid);
             if (parserSchedule != null) {
                 savedSchedule = scheduleRepositoryFacade.cascadeSave(parserSchedule);
-                scheduleRepository.deleteById(student.getScheduleMongoId());
+                if (student.getScheduleMongoId() != null) {
+                    scheduleRepository.deleteById(student.getScheduleMongoId());
+                }
                 student.setScheduleMongoId(savedSchedule.getId());
                 studentRepository.save(student);
                 group.setUniversityGroupId(savedSchedule.getId());

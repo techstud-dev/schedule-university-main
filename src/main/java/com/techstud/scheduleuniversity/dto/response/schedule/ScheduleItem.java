@@ -1,15 +1,13 @@
-package com.techstud.scheduleuniversity.dto.response.scheduleV;
+package com.techstud.scheduleuniversity.dto.response.schedule;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
 import lombok.Data;
-import org.springframework.hateoas.RepresentationModel;
 
 import java.io.Serializable;
 import java.util.List;
 
 @Data
-public class ScheduleItem extends RepresentationModel<ScheduleItem> implements Serializable {
+public class ScheduleItem implements Serializable {
 
     private String id = "-";
     @JsonProperty(value = "isEven")

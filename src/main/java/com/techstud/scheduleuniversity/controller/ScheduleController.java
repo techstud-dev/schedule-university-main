@@ -5,10 +5,8 @@ import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
-import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
-import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleObjectApiResponse;
-import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleApiResponse;
-import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleItem;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.RequestException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
@@ -27,6 +25,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -205,21 +204,21 @@ public class ScheduleController {
 
     @GetMapping("/scheduleDay/{scheduleDayId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<EntityModel<ScheduleDayApiResponse>> getScheduleDay(@PathVariable String scheduleDayId,
+    public ResponseEntity<EntityModel<ScheduleItem>> getScheduleDay(@PathVariable String scheduleDayId,
                                                               @Parameter(hidden = true) Principal principal) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @PostMapping("/scheduleDay/")
     @PreAuthorize("hasRole('USER')")
-    public EntityModel<ScheduleDayApiResponse> createScheduleDay(@RequestBody ApiRequest<Object> saveObject,
+    public EntityModel<ScheduleItem> createScheduleDay(@RequestBody ApiRequest<Object> saveObject,
                                                                  @Parameter(hidden = true) Principal principal) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @PutMapping("/scheduleDay/{scheduleDayId}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<EntityModel<ScheduleDayApiResponse>> updateScheduleDay(@PathVariable String scheduleDayId,
+    public ResponseEntity<EntityModel<ScheduleItem>> updateScheduleDay(@PathVariable String scheduleDayId,
                                                                  @RequestBody ApiRequest<Object> updateObject,
                                                                  @Parameter(hidden = true) Principal principal) {
         throw new UnsupportedOperationException("Not implemented yet");
@@ -236,9 +235,9 @@ public class ScheduleController {
 
     @GetMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindowId}")
     @PreAuthorize("hasRole('USER')")
-    public  ResponseEntity<List<EntityModel<ScheduleItem>>> getLesson(@PathVariable String scheduleDayId,
-                                                      @PathVariable String timeWindowId,
-                                                      @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+    public  ResponseEntity<CollectionModel<EntityModel<ScheduleItem>>> getLesson(@PathVariable String scheduleDayId,
+                                                                                 @PathVariable String timeWindowId,
+                                                                                 @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to get lesson, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
         ScheduleDocument scheduleDocument = scheduleService.getScheduleByStudentName(principal.getName());
         return ResponseEntity.ok(scheduleMapper.toResponse(scheduleDocument, scheduleDayId, timeWindowId));
@@ -246,14 +245,14 @@ public class ScheduleController {
 
     @PostMapping("/scheduleDay/lesson/")
     @PreAuthorize("hasRole('USER')")
-    public EntityModel<List<ScheduleObjectApiResponse>> saveLesson(@RequestBody ApiRequest<Object> saveObject,
+    public EntityModel<List<ScheduleItem>> saveLesson(@RequestBody ApiRequest<Object> saveObject,
                                                                    @Parameter(hidden = true) Principal principal) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @PutMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<EntityModel<List<ScheduleObjectApiResponse>>> updateLesson(@PathVariable String scheduleDayId,
+    public ResponseEntity<EntityModel<List<ScheduleItem>>> updateLesson(@PathVariable String scheduleDayId,
                                                                      @PathVariable String timeWindow,
                                                                      @RequestBody ApiRequest<Object> updateObject,
                                                                      @Parameter(hidden = true) Principal principal) {

@@ -72,15 +72,16 @@ public class ScheduleController {
     @PostMapping("/import")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @RateLimit(capacity = 500, refillTokens = 500, refillPeriod = 1, periodUnit = "MINUTES")
-    public ResponseEntity<EntityModel<ScheduleApiResponse>> importSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> importSchedule(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Данные для импорта расписания",
             required = true,
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = ApiRequestImportDto.class),
                     examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
-                                                           @RequestBody ApiRequest<ImportDto> importRequest,
-                                                           @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
+            @RequestBody ApiRequest<ImportDto> importRequest,
+            @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
         log.info("Incoming request to import schedule, body: {}, user: {}", importRequest, principal.getName());
         requestValidationService.validateImportRequest(importRequest);
         ScheduleDocument documentSchedule =
@@ -110,15 +111,16 @@ public class ScheduleController {
     @PostMapping("/forceImport")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @RateLimit(capacity = 200, refillTokens = 200, refillPeriod = 1, periodUnit = "MINUTES")
-    public ResponseEntity<EntityModel<ScheduleApiResponse>> forceImportSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> forceImportSchedule(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Данные для импорта расписания",
             required = true,
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = ApiRequestImportDto.class),
                     examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
-                                                           @RequestBody ApiRequest<ImportDto> importRequest,
-                                                           @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
+            @RequestBody ApiRequest<ImportDto> importRequest,
+            @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
         log.info("Incoming request to force import schedule, body: {}, user: {}", importRequest, principal.getName());
         requestValidationService.validateImportRequest(importRequest);
         ScheduleDocument documentSchedule =
@@ -214,13 +216,14 @@ public class ScheduleController {
     )
     @PostMapping("/create")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<EntityModel<ScheduleApiResponse>> createSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> createSchedule(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Данные для сохранения расписания",
             required = true,
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = ApiRequestSaveDto.class)))
-                                                               @RequestBody ApiRequest<ScheduleParserResponse> saveObject,
-                                                           @Parameter(hidden = true) Principal principal) {
+            @RequestBody ApiRequest<ScheduleParserResponse> saveObject,
+            @Parameter(hidden = true) Principal principal) {
         log.info("Incoming request to save schedule, body: {}, user: {}", saveObject, principal.getName());
         ScheduleDocument documentSchedule =
                 scheduleService.createSchedule(saveObject.getData(), principal.getName());

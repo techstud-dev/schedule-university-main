@@ -392,7 +392,8 @@ public class ScheduleController {
                             description = "Успешное удаление урока",
                             content = @Content(
                                     mediaType = "application/json",
-                                    schema = @Schema(implementation = ScheduleApiResponse.class))),
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
                     @ApiResponse(
                             responseCode = "401",
                             description = "Неавторизован",

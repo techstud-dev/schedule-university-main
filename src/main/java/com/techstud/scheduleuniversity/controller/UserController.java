@@ -1,5 +1,6 @@
 package com.techstud.scheduleuniversity.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.hateoas.EntityModel;
@@ -14,6 +15,7 @@ import java.security.Principal;
 @RequestMapping("api/v1/user")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "User", description = "API для работы с пользователями")
 public class UserController {
 
     @GetMapping("/profile")

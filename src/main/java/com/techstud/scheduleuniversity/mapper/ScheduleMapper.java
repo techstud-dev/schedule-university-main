@@ -44,6 +44,24 @@ public class ScheduleMapper {
 
     @SneakyThrows
     public CollectionModel<EntityModel<ScheduleItem>> toResponse(ScheduleDocument documentSchedule,
+                                                                 String scheduleDayId) {
+        var oddWeekSchedulesDocument = documentSchedule.getOddWeekSchedule();
+        var evenWeekSchedulesDocument = documentSchedule.getEvenWeekSchedule();
+
+        oddWeekSchedulesDocument.entrySet().removeIf(entry -> !entry.getValue().getId().equals(scheduleDayId));
+        evenWeekSchedulesDocument.entrySet().removeIf(entry -> !entry.getValue().getId().equals(scheduleDayId));
+
+        List<EntityModel<ScheduleItem>> result;
+        if (!oddWeekSchedulesDocument.isEmpty()) {
+            result = mapWeek(oddWeekSchedulesDocument, false);
+        } else {
+            result = mapWeek(evenWeekSchedulesDocument, true);
+        }
+        return CollectionModel.of(result);
+    }
+
+    @SneakyThrows
+    public CollectionModel<EntityModel<ScheduleItem>> toResponse(ScheduleDocument documentSchedule,
                                                                  String scheduleDayId,
                                                                  String timeWindowId) {
         var oddWeekSchedulesDocument = documentSchedule.getOddWeekSchedule();
@@ -56,7 +74,7 @@ public class ScheduleMapper {
             var lessons = new HashMap<>(scheduleDay.getLessons());
             lessons.forEach((timeWindowId1, scheduleObjects) -> {
                 if (!timeWindowId1.equals(timeWindowId)) {
-                    scheduleDay.getLessons().remove(timeWindowId1); // Безопасное удаление
+                    scheduleDay.getLessons().remove(timeWindowId1);
                 }
             });
         });
@@ -65,7 +83,7 @@ public class ScheduleMapper {
             var lessons = new HashMap<>(scheduleDay.getLessons());
             lessons.forEach((timeWindowId1, scheduleObjects) -> {
                 if (!timeWindowId1.equals(timeWindowId)) {
-                    scheduleDay.getLessons().remove(timeWindowId1); // Безопасное удаление
+                    scheduleDay.getLessons().remove(timeWindowId1);
                 }
             });
         });

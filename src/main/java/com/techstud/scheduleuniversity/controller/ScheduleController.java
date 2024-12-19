@@ -15,6 +15,7 @@ import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import com.techstud.scheduleuniversity.swagger.ApiRequestImportDto;
 import com.techstud.scheduleuniversity.swagger.ApiRequestSaveDto;
+import com.techstud.scheduleuniversity.swagger.Examples;
 import com.techstud.scheduleuniversity.validation.RequestValidationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,8 +50,6 @@ public class ScheduleController {
     private final RequestValidationService requestValidationService;
     private final ScheduleMapper scheduleMapper;
 
-    @PostMapping("/import")
-    @PreAuthorize("hasRole('USER')")
     @Operation(
             summary = "Запрос на импорт расписания",
             description = "Если в БД существует расписание для указанной группы, то оно вернется. " +
@@ -58,27 +57,28 @@ public class ScheduleController {
             responses = {
                     @ApiResponse(responseCode = "200",
                             description = "Успешный импорт расписания",
-                            content = @Content(mediaType = "application/json",
-                                    schema = @Schema(implementation = ScheduleApiResponse.class))),
-                    @ApiResponse(responseCode = "401",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
                             description = "Неавторизован",
-                            content = @Content(mediaType = "application/json",
+                            content = @Content(
+                                    mediaType = "application/json",
                                     schema = @Schema(implementation = Map.class),
-                                    examples = @ExampleObject(value = """
-                                            {\
-                                              "systemName": "tchs",
-                                             \
-                                              "applicationName": "schedule-university-main",
-                                             \
-                                              "message": "Unauthorized"
-                                            }"""))),}
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
     )
+    @PostMapping("/import")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @RateLimit(capacity = 500, refillTokens = 500, refillPeriod = 1, periodUnit = "MINUTES")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> importSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Данные для импорта расписания",
             required = true,
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = ApiRequestImportDto.class)))
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ApiRequestImportDto.class),
+                    examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
                                                            @RequestBody ApiRequest<ImportDto> importRequest,
                                                            @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
         log.info("Incoming request to import schedule, body: {}, user: {}", importRequest, principal.getName());
@@ -88,36 +88,35 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleMapper.toResponse(documentSchedule));
     }
 
-    @PostMapping("/forceImport")
-    @PreAuthorize("hasRole('USER')")
     @Operation(
             summary = "Запрос на принудительный импорт расписания",
             description = "Запрос на парсинг расписания и сохранение или перезапись в БД, " +
                     "после привязки к пользователею, совершившего запрос.",
             responses = {
-                    @ApiResponse(responseCode = "200",
+                    @ApiResponse(
+                            responseCode = "200",
                             description = "Успешный импорт расписания",
-                            content = @Content(mediaType = "application/json",
-                                    schema = @Schema(implementation = ScheduleApiResponse.class))),
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
                     @ApiResponse(responseCode = "401",
                             description = "Неавторизован",
-                            content = @Content(mediaType = "application/json",
+                            content = @Content(
+                                    mediaType = "application/json",
                                     schema = @Schema(implementation = Map.class),
-                                    examples = @ExampleObject(value = """
-                                            {\
-                                              "systemName": "tchs",
-                                             \
-                                              "applicationName": "schedule-university-main",
-                                             \
-                                              "message": "Unauthorized"
-                                            }"""))),}
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
     )
+    @PostMapping("/forceImport")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @RateLimit(capacity = 200, refillTokens = 200, refillPeriod = 1, periodUnit = "MINUTES")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> forceImportSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Данные для импорта расписания",
             required = true,
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = ApiRequestImportDto.class)))
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ApiRequestImportDto.class),
+                    examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
                                                            @RequestBody ApiRequest<ImportDto> importRequest,
                                                            @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
         log.info("Incoming request to force import schedule, body: {}, user: {}", importRequest, principal.getName());
@@ -127,16 +126,58 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleMapper.toResponse(documentSchedule));
     }
 
+    @Operation(
+            summary = "Запрос на получение расписания",
+            description = "Получение расписания по ID расписания и пользователю.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное получение расписания",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @GetMapping("/{scheduleId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> getSchedule(@PathVariable String scheduleId,
                                                         @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException {
         ScheduleDocument documentSchedule = scheduleService.getScheduleById(scheduleId);
         return ResponseEntity.ok(scheduleMapper.toResponse(documentSchedule));
     }
 
+    @Operation(
+            summary = "Запрос на получение расписания после авторизации",
+            description = "Первый запрос, при редиректе пользователя на главную страницу с расписанием после авторизации",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное получение расписания",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "Расписание не найдено",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Void.class))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @GetMapping("/postAuthorize")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> getSchedulePostAuthorize(@Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to get schedule post authorize, user: {}", principal.getName());
         ScheduleDocument documentSchedule = scheduleService.getScheduleByStudentName(principal.getName());
@@ -153,25 +194,22 @@ public class ScheduleController {
             description = "Принимает JSON с расписанием, сохраняет данные в каскадном формате и привязывает" +
                     " Mongo ID расписания к пользователю.",
             responses = {
-                    @ApiResponse(responseCode = "200",
+                    @ApiResponse(
+                            responseCode = "200",
                             description = "Успешное сохранение расписания",
-                            content = @Content(mediaType = "application/json",
+                            content = @Content(
+                                    mediaType = "application/json",
                                     schema = @Schema(implementation = ScheduleApiResponse.class))),
-                    @ApiResponse(responseCode = "401",
+                    @ApiResponse(
+                            responseCode = "401",
                             description = "Неавторизован",
-                            content = @Content(mediaType = "application/json",
+                            content = @Content(
+                                    mediaType = "application/json",
                                     schema = @Schema(implementation = Map.class),
-                                    examples = @ExampleObject(value = """
-                                            {\
-                                              "systemName": "tchs",
-                                             \
-                                              "applicationName": "schedule-university-main",
-                                             \
-                                              "message": "Unauthorized"
-                                            }"""))),}
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
     )
     @PostMapping("/create")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> createSchedule(@io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Данные для сохранения расписания",
             required = true,
@@ -186,72 +224,158 @@ public class ScheduleController {
     }
 
     @PutMapping("/{scheduleId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> updateSchedule(@PathVariable String scheduleId,
                                                            @RequestBody ApiRequest<Object> updateObject,
                                                            @Parameter(hidden = true) Principal principal) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
+    @Operation(
+            summary = "Запрос на удаление расписания",
+            description = "Удаляет расписание из БД по ID расписания и пользователю.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное удаление расписания",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = Void.class))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @DeleteMapping("/{scheduleId}")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<EntityModel<Void>> deleteSchedule(@PathVariable String scheduleId,
-                                            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<EntityModel<Void>> deleteSchedule(
+            @Parameter(name = "ID расписания", required = true, example = "6763cdfcf16fce69d8f52945")
+            @PathVariable String scheduleId,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to delete schedule, scheduleId: {}, user: {}", scheduleId, principal.getName());
         scheduleService.deleteSchedule(scheduleId, principal.getName());
         return ResponseEntity.ok().body(null);
     }
 
+
+    @Operation(
+            summary = "Запрос на получение расписания на день",
+            description = "Получение дня расписания по ID дня и пользователю.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное получение расписания на день",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = CollectionModel.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE_DAY))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @GetMapping("/scheduleDay/{scheduleDayId}")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<EntityModel<ScheduleItem>> getScheduleDay(@PathVariable String scheduleDayId,
-                                                              @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<CollectionModel<EntityModel<ScheduleItem>>> getScheduleDay(
+            @Parameter(name = "ID дня расписания", required = true, example = "6763cdfcf16fce69d8f52945")
+            @PathVariable String scheduleDayId,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+        log.info("Incoming request to get schedule day, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
+        ScheduleDocument scheduleDocument = scheduleService.getScheduleByStudentName(principal.getName());
+        return ResponseEntity.ok().body(scheduleMapper.toResponse(scheduleDocument, scheduleDayId));
     }
 
     @PostMapping("/scheduleDay/")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public EntityModel<ScheduleItem> createScheduleDay(@RequestBody ApiRequest<Object> saveObject,
                                                                  @Parameter(hidden = true) Principal principal) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @PutMapping("/scheduleDay/{scheduleDayId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleItem>> updateScheduleDay(@PathVariable String scheduleDayId,
                                                                  @RequestBody ApiRequest<Object> updateObject,
                                                                  @Parameter(hidden = true) Principal principal) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
+    @Operation(
+            summary = "Запрос на удаление дня расписания",
+            description = "Удаляет день расписания из БД по ID дня и пользователю.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное удаление дня расписания",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @DeleteMapping("/scheduleDay/{scheduleDayId}")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<EntityModel<ScheduleApiResponse>> deleteScheduleDay(@PathVariable String scheduleDayId,
-                                                              @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> deleteScheduleDay(
+            @Parameter(name = "ID дня расписания", required = true, example = "6763cdfcf16fce69d8f52945")
+            @PathVariable String scheduleDayId,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to delete schedule day, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
         ScheduleDocument updatedSchedule = scheduleService.deleteScheduleDay(scheduleDayId, principal.getName());
         return ResponseEntity.ok(scheduleMapper.toResponse(updatedSchedule));
     }
 
+    @Operation(
+            summary = "Запрос на получение урока",
+            description = "Получение урока по ID дня, времени урока и пользователю.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное получение урока",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = CollectionModel.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_LESSON))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @GetMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindowId}")
-    @PreAuthorize("hasRole('USER')")
-    public  ResponseEntity<CollectionModel<EntityModel<ScheduleItem>>> getLesson(@PathVariable String scheduleDayId,
-                                                                                 @PathVariable String timeWindowId,
-                                                                                 @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<CollectionModel<EntityModel<ScheduleItem>>> getLesson(
+            @Parameter(name = "ID дня расписания", required = true, example = "6763cdfcf16fce69d8f52945")
+            @PathVariable String scheduleDayId,
+            @Parameter(name = "ID времени урока", required = true, example = "6763cdfcf16fce69d8f52945")
+            @PathVariable String timeWindowId,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to get lesson, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
         ScheduleDocument scheduleDocument = scheduleService.getScheduleByStudentName(principal.getName());
         return ResponseEntity.ok(scheduleMapper.toResponse(scheduleDocument, scheduleDayId, timeWindowId));
     }
 
     @PostMapping("/scheduleDay/lesson/")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public EntityModel<List<ScheduleItem>> saveLesson(@RequestBody ApiRequest<Object> saveObject,
                                                                    @Parameter(hidden = true) Principal principal) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @PutMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<List<ScheduleItem>>> updateLesson(@PathVariable String scheduleDayId,
                                                                      @PathVariable String timeWindow,
                                                                      @RequestBody ApiRequest<Object> updateObject,
@@ -259,11 +383,32 @@ public class ScheduleController {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
+    @Operation(
+            summary = "Запрос на удаление урока",
+            description = "Удаляет урок из БД по ID дня, времени урока и пользователю.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное удаление урока",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @DeleteMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindowId}")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<EntityModel<ScheduleApiResponse>> deleteLesson(@PathVariable String scheduleDayId,
-                                          @PathVariable String timeWindowId,
-                                          @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> deleteLesson(
+            @Parameter(name = "ID дня расписания", required = true, example = "6763cdfcf16fce69d8f52945")
+            @PathVariable String scheduleDayId,
+            @Parameter(name = "ID времени урока", required = true, example = "6763cdfcf16fce69d8f52945")
+            @PathVariable String timeWindowId,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to delete lesson, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
         ScheduleDocument updatedSchedule = scheduleService.deleteLesson(scheduleDayId, timeWindowId, principal.getName());
         return ResponseEntity.ok(scheduleMapper.toResponse(updatedSchedule));

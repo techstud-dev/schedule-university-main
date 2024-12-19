@@ -89,29 +89,29 @@ public class ScheduleRepositoryFacade {
     public ScheduleDocument smartLessonDelete(ScheduleDocument scheduleDocument, String scheduleDayId, String timeWindowId) {
         scheduleDocument.getOddWeekSchedule().forEach((dayOfWeek, scheduleDay) -> {
             if (scheduleDay.getId().equals(scheduleDayId)) {
-                List<String> keysToRemove = new ArrayList<>();
                 scheduleDay.getLessons().forEach((timeSheetId, scheduleObjects) -> {
                     TimeSheetDocument timeSheet = timeSheetRepository.findById(timeSheetId).orElseThrow();
                     if (timeWindowId.equals(timeSheet.getId())) {
-                        keysToRemove.add(timeSheetId);
+
                         scheduleObjectRepository.deleteAll(scheduleObjects);
+
+                        scheduleDay.getLessons().put(timeSheetId, new ArrayList<>());
                     }
                 });
-                keysToRemove.forEach(scheduleDay.getLessons()::remove);
             }
         });
 
         scheduleDocument.getEvenWeekSchedule().forEach((dayOfWeek, scheduleDay) -> {
             if (scheduleDay.getId().equals(scheduleDayId)) {
-                List<String> keysToRemove = new ArrayList<>();
                 scheduleDay.getLessons().forEach((timeSheetId, scheduleObjects) -> {
                     TimeSheetDocument timeSheet = timeSheetRepository.findById(timeSheetId).orElseThrow();
                     if (timeWindowId.equals(timeSheet.getId())) {
-                        keysToRemove.add(timeSheetId);
+
                         scheduleObjectRepository.deleteAll(scheduleObjects);
+
+                        scheduleDay.getLessons().put(timeSheetId, new ArrayList<>());
                     }
                 });
-                keysToRemove.forEach(scheduleDay.getLessons()::remove);
             }
         });
 
@@ -120,7 +120,6 @@ public class ScheduleRepositoryFacade {
         } catch (Exception e) {
             throw new RuntimeException("Error computing hash", e);
         }
-
         return scheduleRepository.save(scheduleDocument);
     }
 
@@ -128,10 +127,17 @@ public class ScheduleRepositoryFacade {
         Map<DayOfWeek, ScheduleDayDocument> result = new LinkedHashMap<>();
         weekSchedule.forEach((dayOfWeek, scheduleDayDto) -> {
             ScheduleDayDocument scheduleDay = cascadeDaySave(scheduleDayDto);
-            result.put(dayOfWeek, scheduleDay);
+
+            boolean allEmpty = scheduleDay.getLessons().isEmpty()
+                    || scheduleDay.getLessons().values().stream().allMatch(List::isEmpty);
+
+            if (!allEmpty) {
+                result.put(dayOfWeek, scheduleDay);
+            }
         });
         return result;
     }
+
 
     private ScheduleDayDocument cascadeDaySave(ScheduleDayParserResponse scheduleDayDto) {
         try {

@@ -221,8 +221,6 @@ public class ScheduleServiceImpl implements ScheduleService {
                 }
                 student.setScheduleMongoId(savedSchedule.getId());
                 studentRepository.save(student);
-                group.setUniversityGroupId(savedSchedule.getId());
-                universityGroupRepository.save(group);
             }
         } catch (ParserResponseTimeoutException e) {
             log.error("Error while waiting for parser response", e);

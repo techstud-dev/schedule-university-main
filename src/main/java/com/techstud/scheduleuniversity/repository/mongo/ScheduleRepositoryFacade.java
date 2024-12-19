@@ -3,9 +3,10 @@ package com.techstud.scheduleuniversity.repository.mongo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.gson.Gson;
 import com.techstud.scheduleuniversity.dao.HashableDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheetDocument;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleDayParserResponse;
@@ -25,10 +26,8 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.DayOfWeek;
-import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalTime;
+import java.util.*;
 
 @Component
 @Slf4j
@@ -62,14 +61,83 @@ public class ScheduleRepositoryFacade {
         }
     }
 
+    public ScheduleDocument smartScheduleDayDelete(ScheduleDocument scheduleDocument, ScheduleDayDocument scheduleDayDocument) {
+        try {
+            boolean removedEven = scheduleDocument.getEvenWeekSchedule().values().removeIf(
+                    scheduleDay -> scheduleDay.getId().equals(scheduleDayDocument.getId())
+            );
+
+            boolean removedOdd = scheduleDocument.getOddWeekSchedule().values().removeIf(
+                    scheduleDay -> scheduleDay.getId().equals(scheduleDayDocument.getId())
+            );
+
+            if (removedEven || removedOdd) {
+                scheduleDayRepository.delete(scheduleDayDocument);
+
+                computeAndSetHash(scheduleDocument);
+
+                return scheduleRepository.save(scheduleDocument);
+            }
+
+            return scheduleDocument;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error smart delete schedule day", e);
+        }
+    }
+
+    public ScheduleDocument smartLessonDelete(ScheduleDocument scheduleDocument, String scheduleDayId, String timeWindowId) {
+        scheduleDocument.getOddWeekSchedule().forEach((dayOfWeek, scheduleDay) -> {
+            if (scheduleDay.getId().equals(scheduleDayId)) {
+                scheduleDay.getLessons().forEach((timeSheetId, scheduleObjects) -> {
+                    TimeSheetDocument timeSheet = timeSheetRepository.findById(timeSheetId).orElseThrow();
+                    if (timeWindowId.equals(timeSheet.getId())) {
+
+                        scheduleObjectRepository.deleteAll(scheduleObjects);
+
+                        scheduleDay.getLessons().put(timeSheetId, new ArrayList<>());
+                    }
+                });
+            }
+        });
+
+        scheduleDocument.getEvenWeekSchedule().forEach((dayOfWeek, scheduleDay) -> {
+            if (scheduleDay.getId().equals(scheduleDayId)) {
+                scheduleDay.getLessons().forEach((timeSheetId, scheduleObjects) -> {
+                    TimeSheetDocument timeSheet = timeSheetRepository.findById(timeSheetId).orElseThrow();
+                    if (timeWindowId.equals(timeSheet.getId())) {
+
+                        scheduleObjectRepository.deleteAll(scheduleObjects);
+
+                        scheduleDay.getLessons().put(timeSheetId, new ArrayList<>());
+                    }
+                });
+            }
+        });
+
+        try {
+            computeAndSetHash(scheduleDocument);
+        } catch (Exception e) {
+            throw new RuntimeException("Error computing hash", e);
+        }
+        return scheduleRepository.save(scheduleDocument);
+    }
+
     private Map<DayOfWeek, ScheduleDayDocument> cascadeWeekSave(Map<DayOfWeek, ScheduleDayParserResponse> weekSchedule) {
         Map<DayOfWeek, ScheduleDayDocument> result = new LinkedHashMap<>();
         weekSchedule.forEach((dayOfWeek, scheduleDayDto) -> {
             ScheduleDayDocument scheduleDay = cascadeDaySave(scheduleDayDto);
-            result.put(dayOfWeek, scheduleDay);
+
+            boolean allEmpty = scheduleDay.getLessons().isEmpty()
+                    || scheduleDay.getLessons().values().stream().allMatch(List::isEmpty);
+
+            if (!allEmpty) {
+                result.put(dayOfWeek, scheduleDay);
+            }
         });
         return result;
     }
+
 
     private ScheduleDayDocument cascadeDaySave(ScheduleDayParserResponse scheduleDayDto) {
         try {

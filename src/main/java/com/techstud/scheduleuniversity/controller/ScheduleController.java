@@ -50,6 +50,7 @@ public class ScheduleController {
     private final RequestValidationService requestValidationService;
     private final ScheduleMapper scheduleMapper;
 
+    @SuppressWarnings("all")
     @Operation(
             summary = "Запрос на импорт расписания",
             description = "Если в БД существует расписание для указанной группы, то оно вернется. " +
@@ -89,6 +90,7 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleMapper.toResponse(documentSchedule));
     }
 
+    @SuppressWarnings("all")
     @Operation(
             summary = "Запрос на принудительный импорт расписания",
             description = "Запрос на парсинг расписания и сохранение или перезапись в БД, " +
@@ -172,8 +174,7 @@ public class ScheduleController {
                             responseCode = "204",
                             description = "Расписание не найдено",
                             content = @Content(
-                                    mediaType = "application/json",
-                                    schema = @Schema(implementation = Void.class))),
+                                    mediaType = "application/json")),
                     @ApiResponse(
                             responseCode = "401",
                             description = "Неавторизован",
@@ -195,6 +196,7 @@ public class ScheduleController {
         return ResponseEntity.ok(response);
     }
 
+    @SuppressWarnings("all")
     @Operation(
             summary = "Запрос на сохранение расписания",
             description = "Принимает JSON с расписанием, сохраняет данные в каскадном формате и привязывает" +
@@ -247,8 +249,7 @@ public class ScheduleController {
                     @ApiResponse(
                             responseCode = "200",
                             description = "Успешное удаление расписания",
-                            content = @Content(mediaType = "application/json",
-                                    schema = @Schema(implementation = Void.class))),
+                            content = @Content(mediaType = "application/json")),
                     @ApiResponse(
                             responseCode = "401",
                             description = "Неавторизован",

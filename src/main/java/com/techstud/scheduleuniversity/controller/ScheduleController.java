@@ -38,11 +38,11 @@ import java.util.Map;
 
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 
+@SuppressWarnings("unused")
 @RestController
 @RequestMapping("/api/v1/schedule")
 @RequiredArgsConstructor
 @Slf4j
-@SuppressWarnings("unused")
 @Tag(name = "Schedule", description = "API для работы с расписанием")
 public class ScheduleController {
 

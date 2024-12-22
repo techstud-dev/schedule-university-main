@@ -15,6 +15,7 @@ import com.techstud.scheduleuniversity.dto.parser.response.TimeSheetParserRespon
 import com.techstud.scheduleuniversity.mapper.ScheduleObjectMapper;
 import com.techstud.scheduleuniversity.mapper.TimeSheetMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -139,17 +140,39 @@ public class ScheduleRepositoryFacade {
         return result;
     }
 
-    public ScheduleDayDocument cascadeDaySave(ScheduleDayParserResponse scheduleDayDto) {
-        try {
-            ScheduleDayDocument scheduleDay = new ScheduleDayDocument();
-            scheduleDay.setDate(scheduleDayDto.getDate());
-            scheduleDay.setLessons(cascadeLessonSave(scheduleDayDto.getLessons()));
-            computeAndSetHash(scheduleDay);
-            return findOrSave(scheduleDay, ScheduleDayDocument.class, scheduleDayRepository);
-        } catch (Exception e) {
-            throw new RuntimeException("Error cascade save day", e);
-        }
+
+    @SneakyThrows
+    public ScheduleDocument smartDaySave(
+            ScheduleDayParserResponse scheduleDayParserResponse,
+            ScheduleDocument scheduleDocument,
+            String scheduleDayId)
+    {
+            Optional<ScheduleDayDocument> dayDocument = Stream.concat(
+                    scheduleDocument.getEvenWeekSchedule().values().stream(),
+                    scheduleDocument.getOddWeekSchedule().values().stream()
+            )
+                    .filter(day -> day.getId().equals(scheduleDayId))
+                    .findFirst();
+
+            if (dayDocument.isPresent()) {
+                cascadeDaySave(scheduleDayParserResponse);
+                computeAndSetHash(scheduleDocument);
+                return scheduleRepository.save(scheduleDocument);
+            }
+            return scheduleDocument;
     }
+
+    @SneakyThrows
+    public ScheduleDayDocument cascadeDaySave(ScheduleDayParserResponse scheduleDayParserResponse) {
+                ScheduleDayDocument scheduleDay = ScheduleDayDocument.builder()
+                        .date(scheduleDayParserResponse.getDate())
+                        .lessons(cascadeLessonSave(scheduleDayParserResponse.getLessons()))
+                        .build();
+                computeAndSetHash(scheduleDay);
+                return findOrSave(scheduleDay, ScheduleDayDocument.class, scheduleDayRepository);
+    }
+
+
 
     public Map<String, List<ScheduleObjectDocument>> cascadeLessonSave(
             Map<TimeSheetParserResponse, List<ScheduleObjectParserResponse>> lessons) {

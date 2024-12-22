@@ -21,7 +21,7 @@ public interface ScheduleService {
 
     ScheduleDocument createSchedule(ScheduleParserResponse saveDto, String username);
 
-    ScheduleDayDocument saveScheduleDay(ScheduleDayParserResponse saveDayResponse, String scheduleDayId, String userName) throws StudentNotFoundException, ScheduleNotFoundException;
+    ScheduleDocument saveScheduleDay(ScheduleDayParserResponse saveDayResponse, String scheduleDayId, String userName) throws StudentNotFoundException, ScheduleNotFoundException;
 
     void deleteSchedule(String id, String username) throws ScheduleNotFoundException, StudentNotFoundException;
 

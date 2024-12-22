@@ -22,6 +22,7 @@ import com.techstud.scheduleuniversity.repository.jpa.UniversityGroupRepository;
 import com.techstud.scheduleuniversity.repository.mongo.*;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -235,8 +236,15 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Transactional
-    public ScheduleDayDocument saveScheduleDay(ScheduleDayParserResponse saveDayResponse, String scheduleDayId, String userNamed){
-        return scheduleDayRepository.findById(scheduleDayId).map(
+    public ScheduleDocument saveScheduleDay(
+            ScheduleDayParserResponse saveDayResponse,
+            String scheduleDayId,
+            String userName
+    ) throws StudentNotFoundException, ScheduleNotFoundException {
+        Student student = studentRepository.findByUsername(userName)
+                .orElseThrow(() -> new StudentNotFoundException("Not found student for student name: " + userName));
+        return scheduleRepository.findById(student.getScheduleMongoId()).map(schedule ->
+                scheduleDayRepository.findById(scheduleDayId).map(
                         existingDay ->{
                             existingDay.getLessons().values().stream()
                                     .filter(Objects::nonNull)
@@ -253,11 +261,13 @@ public class ScheduleServiceImpl implements ScheduleService {
                                     .hash(existingDay.getHash())
                                     .build();
                             log.info("Successfully updated schedule day {}.", existingDay.getHash());
-                            return scheduleDayRepository.save(updatedDay);
+                            scheduleDayRepository.save(updatedDay);
+                            return scheduleRepository.save(schedule);
                         })
                 .orElseGet(() -> {
                     log.info("Successfully saved schedule day with date: {}", saveDayResponse.getDate());
-                    return scheduleRepositoryFacade.cascadeDaySave(saveDayResponse);
-                });
+                    return scheduleRepositoryFacade.smartDaySave(saveDayResponse, schedule, scheduleDayId);
+                }))
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found."));
     }
 }

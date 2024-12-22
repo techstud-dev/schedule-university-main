@@ -308,7 +308,7 @@ public class ScheduleController {
     }
 
     @PostMapping("/scheduleDay/save/{scheduleDayId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Operation(
             summary = "Запрос на сохранение ScheduleDay",
             description = "Принимает JSON с ScheduleDay и ScheduleDayId, сохраняет данные в каскадном формате.",
@@ -330,17 +330,12 @@ public class ScheduleController {
                                               "message": "Unauthorized"
                                             }"""))),}
     )
-    public EntityModel<ScheduleDayApiResponse> createScheduleDay(@PathVariable String scheduleDayId,
+    public ResponseEntity<CollectionModel<EntityModel<ScheduleItem>>> createScheduleDay(@PathVariable String scheduleDayId,
                                                                  @RequestBody ApiRequest<ScheduleDayParserResponse> saveObject,
                                                                  @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Import schedule day, body: {}, id: {}", saveObject, scheduleDayId);
-        ScheduleDayDocument scheduleDayDocument = scheduleService.saveScheduleDay(
-                saveObject.getData(), scheduleDayId, principal.getName()
-        );
-        ScheduleDayApiResponse scheduleDayApiResponse = scheduleDayMapper.toResponse(
-                scheduleDayDocument
-        );
-        return EntityModel.of(scheduleDayApiResponse);
+        ScheduleDocument scheduleDocument = scheduleService.saveScheduleDay(saveObject.getData(), scheduleDayId, principal.getName());
+        return ResponseEntity.ok().body(scheduleMapper.toResponse(scheduleDocument, scheduleDayId));
     }
 
     @PutMapping("/scheduleDay/{scheduleDayId}")

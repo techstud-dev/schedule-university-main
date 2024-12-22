@@ -1,11 +1,14 @@
 package com.techstud.scheduleuniversity.service.impl;
 
+import com.jayway.jsonpath.Criteria;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dao.entity.Student;
 import com.techstud.scheduleuniversity.dao.entity.UniversityGroup;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleDayParserResponse;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
@@ -13,19 +16,23 @@ import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
 import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
+import com.techstud.scheduleuniversity.mapper.ScheduleDayMapper;
 import com.techstud.scheduleuniversity.repository.jpa.StudentRepository;
 import com.techstud.scheduleuniversity.repository.jpa.UniversityGroupRepository;
-import com.techstud.scheduleuniversity.repository.mongo.ScheduleDayRepository;
-import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepository;
-import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepositoryFacade;
+import com.techstud.scheduleuniversity.repository.mongo.*;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.management.Query;
 import java.time.LocalDate;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +46,9 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final KafkaMessageObserver messageObserver;
     private final StudentRepository studentRepository;
     private final ScheduleDayRepository scheduleDayRepository;
+    private final ScheduleDayMapper scheduleDayMapper;
+    private final ScheduleObjectRepository scheduleObjectRepository;
+    private final TimeSheetRepository timeSheetRepository;
 
     @Override
     @Transactional
@@ -54,22 +64,18 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .findByUniversityShortNameAndGroupCode(importDto.getUniversityName(), importDto.getGroupCode())
                 .orElseThrow(() -> new IllegalArgumentException("Group " + importDto.getGroupCode() + " not found"));
 
-        if (group.getScheduleMongoId() != null) {
-            scheduleDocument = scheduleRepository.findById(group.getScheduleMongoId())
-                    .orElse(null);
-        }
-
-        if (scheduleDocument == null && student.getScheduleMongoId() != null) {
+        if (student.getScheduleMongoId() != null) {
             scheduleDocument = scheduleRepository.findById(student.getScheduleMongoId())
                     .orElse(null);
         }
 
         if (scheduleDocument != null) {
+            log.info("Schedule found for group {}. Returning existing schedule.", importDto.getGroupCode());
             return scheduleDocument;
         }
 
         log.warn("Schedule not found for group {}. Attempting to import from parser.", importDto.getGroupCode());
-        scheduleDocument = fullFetchAndSaveSchedule(group, student);
+        scheduleDocument  = fetchAndSaveSchedule(group, student);
         if (scheduleDocument == null) {
             throw new ScheduleNotFoundException("Schedule not found for group " + importDto.getGroupCode());
         }
@@ -226,5 +232,42 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.error("Error while waiting for parser response", e);
         }
         return savedSchedule;
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument saveScheduleDay(
+            ScheduleDayParserResponse saveDayResponse,
+            String scheduleDayId,
+            String userName
+    ) throws StudentNotFoundException, ScheduleNotFoundException {
+        Student student = studentRepository.findByUsername(userName)
+                .orElseThrow(() -> new StudentNotFoundException("Not found student for student name: " + userName));
+        return scheduleRepository.findById(student.getScheduleMongoId()).map(schedule ->
+                scheduleDayRepository.findById(scheduleDayId).map(
+                        existingDay ->{
+                            existingDay.getLessons().values().stream()
+                                    .filter(Objects::nonNull)
+                                    .flatMap(Collection::stream)
+                                    .map(ScheduleObjectDocument::getId)
+                                    .filter(Objects::nonNull)
+                                    .forEach(scheduleObjectRepository::deleteById);
+                            log.info("Successfully delete schedule object {}.", LocalDateTime.now());
+
+                            final ScheduleDayDocument updatedDay = ScheduleDayDocument.builder()
+                                    .id(existingDay.getId())
+                                    .date(saveDayResponse.getDate())
+                                    .lessons(scheduleRepositoryFacade.cascadeLessonSave(saveDayResponse.getLessons()))
+                                    .hash(existingDay.getHash())
+                                    .build();
+                            log.info("Successfully updated schedule day {}.", existingDay.getHash());
+                            scheduleDayRepository.save(updatedDay);
+                            return scheduleRepository.save(schedule);
+                        })
+                .orElseGet(() -> {
+                    log.info("Successfully saved schedule day with date: {}", saveDayResponse.getDate());
+                    return scheduleRepositoryFacade.smartDaySave(saveDayResponse, schedule, scheduleDayId);
+                }))
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found."));
     }
 }

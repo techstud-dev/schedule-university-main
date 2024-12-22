@@ -1,16 +1,20 @@
 package com.techstud.scheduleuniversity.controller;
 
 import com.techstud.scheduleuniversity.annotation.RateLimit;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.ImportDto;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleDayParserResponse;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.RequestException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
+import com.techstud.scheduleuniversity.mapper.ScheduleDayMapper;
 import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import com.techstud.scheduleuniversity.swagger.ApiRequestImportDto;
@@ -38,17 +42,19 @@ import java.util.Map;
 
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 
-@SuppressWarnings("unused")
+
 @RestController
 @RequestMapping("/api/v1/schedule")
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("unused")
 @Tag(name = "Schedule", description = "API для работы с расписанием")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
     private final RequestValidationService requestValidationService;
     private final ScheduleMapper scheduleMapper;
+    private final ScheduleDayMapper scheduleDayMapper;
 
     @SuppressWarnings("all")
     @Operation(
@@ -73,14 +79,15 @@ public class ScheduleController {
     @PostMapping("/import")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @RateLimit(capacity = 500, refillTokens = 500, refillPeriod = 1, periodUnit = "MINUTES")
+
     public ResponseEntity<EntityModel<ScheduleApiResponse>> importSchedule(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Данные для импорта расписания",
-            required = true,
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ApiRequestImportDto.class),
-                    examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
+                    description = "Данные для импорта расписания",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiRequestImportDto.class),
+                            examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
             @RequestBody ApiRequest<ImportDto> importRequest,
             @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
         log.info("Incoming request to import schedule, body: {}, user: {}", importRequest, principal.getName());
@@ -115,12 +122,12 @@ public class ScheduleController {
     @RateLimit(capacity = 200, refillTokens = 200, refillPeriod = 1, periodUnit = "MINUTES")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> forceImportSchedule(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Данные для импорта расписания",
-            required = true,
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ApiRequestImportDto.class),
-                    examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
+                    description = "Данные для импорта расписания",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiRequestImportDto.class),
+                            examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
             @RequestBody ApiRequest<ImportDto> importRequest,
             @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
         log.info("Incoming request to force import schedule, body: {}, user: {}", importRequest, principal.getName());
@@ -220,10 +227,10 @@ public class ScheduleController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> createSchedule(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Данные для сохранения расписания",
-            required = true,
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = ApiRequestSaveDto.class)))
+                    description = "Данные для сохранения расписания",
+                    required = true,
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiRequestSaveDto.class)))
             @RequestBody ApiRequest<ScheduleParserResponse> saveObject,
             @Parameter(hidden = true) Principal principal) {
         log.info("Incoming request to save schedule, body: {}, user: {}", saveObject, principal.getName());
@@ -300,11 +307,35 @@ public class ScheduleController {
         return ResponseEntity.ok().body(scheduleMapper.toResponse(scheduleDocument, scheduleDayId));
     }
 
-    @PostMapping("/scheduleDay/")
+    @PostMapping("/scheduleDay/save/{scheduleDayId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public EntityModel<ScheduleItem> createScheduleDay(@RequestBody ApiRequest<Object> saveObject,
-                                                                 @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    @Operation(
+            summary = "Запрос на сохранение ScheduleDay",
+            description = "Принимает JSON с ScheduleDay и ScheduleDayId, сохраняет данные в каскадном формате.",
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            description = "Успешное сохранение расписания",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class))),
+                    @ApiResponse(responseCode = "401",
+                            description = "Не авторизован",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = """
+                                            {\
+                                              "systemName": "tchs",
+                                             \
+                                              "applicationName": "schedule-university-main",
+                                             \
+                                              "message": "Unauthorized"
+                                            }"""))),}
+    )
+    public ResponseEntity<CollectionModel<EntityModel<ScheduleItem>>> createScheduleDay(@PathVariable String scheduleDayId,
+                                                                 @RequestBody ApiRequest<ScheduleDayParserResponse> saveObject,
+                                                                 @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+        log.info("Import schedule day, body: {}, id: {}", saveObject, scheduleDayId);
+        ScheduleDocument scheduleDocument = scheduleService.saveScheduleDay(saveObject.getData(), scheduleDayId, principal.getName());
+        return ResponseEntity.ok().body(scheduleMapper.toResponse(scheduleDocument, scheduleDayId));
     }
 
     @PutMapping("/scheduleDay/{scheduleDayId}")
@@ -382,16 +413,16 @@ public class ScheduleController {
     @PostMapping("/scheduleDay/lesson/")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public EntityModel<List<ScheduleItem>> saveLesson(@RequestBody ApiRequest<Object> saveObject,
-                                                                   @Parameter(hidden = true) Principal principal) {
+                                                      @Parameter(hidden = true) Principal principal) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @PutMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<List<ScheduleItem>>> updateLesson(@PathVariable String scheduleDayId,
-                                                                     @PathVariable String timeWindow,
-                                                                     @RequestBody ApiRequest<Object> updateObject,
-                                                                     @Parameter(hidden = true) Principal principal) {
+                                                                        @PathVariable String timeWindow,
+                                                                        @RequestBody ApiRequest<Object> updateObject,
+                                                                        @Parameter(hidden = true) Principal principal) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
@@ -426,4 +457,5 @@ public class ScheduleController {
         ScheduleDocument updatedSchedule = scheduleService.deleteLesson(scheduleDayId, timeWindowId, principal.getName());
         return ResponseEntity.ok(scheduleMapper.toResponse(updatedSchedule));
     }
+
 }

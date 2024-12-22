@@ -1,6 +1,11 @@
 package com.techstud.scheduleuniversity.mapper;
 
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheetDocument;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleDayParserResponse;
+import com.techstud.scheduleuniversity.dto.parser.response.ScheduleObjectParserResponse;
+import com.techstud.scheduleuniversity.dto.parser.response.TimeSheetParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleDayApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -8,11 +13,12 @@ import org.springframework.stereotype.Component;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Component
 @Slf4j
+@Component
 public class ScheduleDayMapper {
 
     private final ScheduleObjectMapper objectMapper = new ScheduleObjectMapper();
@@ -47,10 +53,43 @@ public class ScheduleDayMapper {
         return scheduleDayDocument;
     }
 
+
+    public ScheduleDayDocument toDocumentByResponse(ScheduleDayParserResponse scheduleDayParserResponse) {
+        ScheduleDayDocument scheduleDayDocument = new ScheduleDayDocument();
+        scheduleDayDocument.setDate(scheduleDayParserResponse.getDate());
+        scheduleDayDocument.setLessons(scheduleDayParserResponse.getLessons()
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        entry -> entry.getKey().toString(),
+                        entry -> entry.getValue()
+                                .stream()
+                                .map(objectMapper::toDocument)
+                                .toList()
+                )));
+        return scheduleDayDocument;
+    }
+
+    public Map<String, List<ScheduleObjectDocument>> fromResponseToDocument(
+            Map<TimeSheetParserResponse, List<ScheduleObjectParserResponse>> inputStructure
+    ){
+        return inputStructure.entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        entry -> entry.getKey().toString(),
+                        entry -> entry.getValue().stream()
+                                .map(objectMapper::toDocument)
+                                .toList()
+                ));
+    }
+
+
     private Date fromStringToDate(String inputStringDate) throws ParseException {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd"); // Define the format
+        log.info("Input date format: {}", inputStringDate);
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); // Define the format
         Date date = formatter.parse(inputStringDate);
         log.error("Invalid date format: {}", inputStringDate);
+        log.info("Date format: {}", formatter.format(date));
         return date;
     }
 }

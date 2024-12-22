@@ -1,7 +1,10 @@
 package com.techstud.scheduleuniversity.service.impl;
 
+
+import com.jayway.jsonpath.Criteria;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dao.entity.Student;
 import com.techstud.scheduleuniversity.dao.entity.UniversityGroup;
 import com.techstud.scheduleuniversity.dto.ImportDto;
@@ -13,19 +16,22 @@ import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
+import com.techstud.scheduleuniversity.mapper.ScheduleDayMapper;
 import com.techstud.scheduleuniversity.repository.jpa.StudentRepository;
 import com.techstud.scheduleuniversity.repository.jpa.UniversityGroupRepository;
-import com.techstud.scheduleuniversity.repository.mongo.ScheduleDayRepository;
-import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepository;
-import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepositoryFacade;
+import com.techstud.scheduleuniversity.repository.mongo.*;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.management.Query;
 import java.time.LocalDate;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +45,10 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final KafkaMessageObserver messageObserver;
     private final StudentRepository studentRepository;
     private final ScheduleDayRepository scheduleDayRepository;
+    private final ScheduleDayMapper scheduleDayMapper;
+    private final ScheduleObjectRepository scheduleObjectRepository;
+    private final TimeSheetRepository timeSheetRepository;
+
 
     @Override
     @Transactional
@@ -133,15 +143,31 @@ public class ScheduleServiceImpl implements ScheduleService {
     }
 
     @Override
-    public ScheduleDayDocument saveScheduleDay(ScheduleDayParserResponse saveDto, String userName) {
+    @Transactional
+    public ScheduleDayDocument saveScheduleDay(final ScheduleDayParserResponse saveDayResponse, final String scheduleDayId){
+        return scheduleDayRepository.findById(scheduleDayId).map(
+                        existingDay ->{
+                            existingDay.getLessons().values().stream()
+                                    .filter(Objects::nonNull)
+                                    .flatMap(Collection::stream)
+                                    .map(ScheduleObjectDocument::getId)
+                                    .filter(Objects::nonNull)
+                                    .forEach(scheduleObjectRepository::deleteById);
+                            log.info("Successfully delete schedule object {}.", LocalDateTime.now());
 
-        //Logic of work:
-        //Search input Day in Document Week
-        //if we find -> update and replace Day in Document Week
-            //else we not find -> insert and add new MongoId to User by userName
-
-
-        return null;
+                            final ScheduleDayDocument updatedDay = ScheduleDayDocument.builder()
+                                    .id(existingDay.getId())
+                                    .date(saveDayResponse.getDate())
+                                    .lessons(scheduleRepositoryFacade.cascadeLessonSave(saveDayResponse.getLessons()))
+                                    .hash(existingDay.getHash())
+                                    .build();
+                            log.info("Successfully updated schedule day {}.", existingDay.getHash());
+                            return scheduleDayRepository.save(updatedDay);
+                        })
+                .orElseGet(() -> {
+                    log.info("Successfully saved schedule day with date: {}", saveDayResponse.getDate());
+                    return scheduleRepositoryFacade.cascadeDaySave(saveDayResponse);
+                });
     }
 }
 

@@ -195,13 +195,35 @@ public class ScheduleController {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @PostMapping("/scheduleDay/")
+    @PostMapping("/scheduleDay/save/{scheduleDayId}")
     @PreAuthorize("hasRole('USER')")
-    public EntityModel<ScheduleDayApiResponse> createScheduleDay(@RequestBody ApiRequest<ScheduleDayParserResponse> saveObject,
-                                                                 @Parameter(hidden = true) Principal principal) {
-        log.info("Import schedule day, body: {}, user: {}", saveObject, principal.getName());
+    @Operation(
+            summary = "Запрос на сохранение ScheduleDay",
+            description = "Принимает JSON с ScheduleDay и ScheduleDayId, сохраняет данные в каскадном формате.",
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            description = "Успешное сохранение расписания",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class))),
+                    @ApiResponse(responseCode = "401",
+                            description = "Не авторизован",
+                            content = @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = """
+                                            {\
+                                              "systemName": "tchs",
+                                             \
+                                              "applicationName": "schedule-university-main",
+                                             \
+                                              "message": "Unauthorized"
+                                            }"""))),}
+    )
+    public EntityModel<ScheduleDayApiResponse> createScheduleDay(@PathVariable String scheduleDayId,
+                                                                 @RequestBody ApiRequest<ScheduleDayParserResponse> saveObject,
+                                                                 @Parameter(hidden = true) Principal principal){
+        log.info("Import schedule day, body: {}, id: {}", saveObject, scheduleDayId);
         ScheduleDayDocument scheduleDayDocument = scheduleService.saveScheduleDay(
-                saveObject.getData(), principal.getName()
+                saveObject.getData(), scheduleDayId
         );
         ScheduleDayApiResponse scheduleDayApiResponse = scheduleDayMapper.toResponse(
                 scheduleDayDocument

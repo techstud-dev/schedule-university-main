@@ -77,7 +77,7 @@ public class ScheduleMapper {
                         methodOn(ScheduleController.class).createSchedule(null, null))
                         .withRel("createSchedule")
                         .withType("POST")
-                );
+        );
     }
 
 
@@ -98,45 +98,50 @@ public class ScheduleMapper {
                     scheduleItem.setPlace(scheduleObject.getPlace());
                     scheduleItem.setGroups(scheduleObject.getGroups());
 
-                    EntityModel<ScheduleItem> scheduleItemEntity = EntityModel.of(scheduleItem,
-                            linkTo(
-                                    methodOn(ScheduleController.class).getLesson(scheduleDay.getId(), timeSheetId,
-                                            null))
-                                    .withRel("getScheduleObject")
-                                    .withType("GET"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).updateLesson(scheduleDay.getId(), timeSheetId,
-                                            null, null))
-                                    .withRel("updateScheduleObject")
-                                    .withType("PUT"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).deleteLesson(scheduleDay.getId(), timeSheetId,
-                                            null))
-                                    .withRel("deleteScheduleObject")
-                                    .withType("DELETE"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).saveLesson(null, null))
-                                    .withRel("createScheduleObject")
-                                    .withType("POST"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).getScheduleDay(scheduleDay.getId(), null))
-                                    .withRel("getScheduleDay")
-                                    .withType("GET"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).createScheduleDay(null, null))
-                                    .withRel("createScheduleDay")
-                                    .withType("POST"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).updateScheduleDay(scheduleDay.getId(),
-                                            null, null))
-                                    .withRel("updateScheduleDay")
-                                    .withType("PUT"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).deleteScheduleDay(scheduleDay.getId(), null))
-                                    .withRel("deleteScheduleDay")
-                                    .withType("DELETE")
+                    EntityModel<ScheduleItem> scheduleItemEntity = null;
+                    try {
+                        scheduleItemEntity = EntityModel.of(scheduleItem,
+                                linkTo(
+                                        methodOn(ScheduleController.class).getLesson(scheduleDay.getId(), timeSheetId,
+                                                null))
+                                        .withRel("getScheduleObject")
+                                        .withType("GET"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).updateLesson(scheduleDay.getId(), timeSheetId,
+                                                null, null))
+                                        .withRel("updateScheduleObject")
+                                        .withType("PUT"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).deleteLesson(scheduleDay.getId(), timeSheetId,
+                                                null))
+                                        .withRel("deleteScheduleObject")
+                                        .withType("DELETE"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).saveLesson(null, null))
+                                        .withRel("createScheduleObject")
+                                        .withType("POST"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).getScheduleDay(scheduleDay.getId(), null))
+                                        .withRel("getScheduleDay")
+                                        .withType("GET"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).createScheduleDay(null, null, null))
+                                        .withRel("createScheduleDay")
+                                        .withType("POST"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).updateScheduleDay(scheduleDay.getId(),
+                                                null, null))
+                                        .withRel("updateScheduleDay")
+                                        .withType("PUT"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).deleteScheduleDay(scheduleDay.getId(), null))
+                                        .withRel("deleteScheduleDay")
+                                        .withType("DELETE")
 
-                    );
+                        );
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                     response.add(scheduleItemEntity);
                 });
             });

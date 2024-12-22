@@ -71,7 +71,7 @@ public class ScheduleRepositoryFacade {
         return result;
     }
 
-    private ScheduleDayDocument cascadeDaySave(ScheduleDayParserResponse scheduleDayDto) {
+    public ScheduleDayDocument cascadeDaySave(ScheduleDayParserResponse scheduleDayDto) {
         try {
             ScheduleDayDocument scheduleDay = new ScheduleDayDocument();
             scheduleDay.setDate(scheduleDayDto.getDate());
@@ -84,7 +84,7 @@ public class ScheduleRepositoryFacade {
         }
     }
 
-    private Map<String, List<ScheduleObjectDocument>> cascadeLessonSave(
+    public Map<String, List<ScheduleObjectDocument>> cascadeLessonSave(
             Map<TimeSheetParserResponse, List<ScheduleObjectParserResponse>> lessons) {
 
         Map<String, List<ScheduleObjectDocument>> result = new LinkedHashMap<>();

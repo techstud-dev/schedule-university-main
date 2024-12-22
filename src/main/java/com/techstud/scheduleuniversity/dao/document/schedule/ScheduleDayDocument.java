@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Builder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -18,6 +19,7 @@ import java.util.*;
 @NoArgsConstructor
 @Document(collection = "schedule_day")
 @EqualsAndHashCode(of = {"date", "lessons"})
+@Builder
 public class ScheduleDayDocument implements Serializable, HashableDocument {
 
     @Id

@@ -31,6 +31,16 @@ public class ScheduleObjectMapper {
         return list;
     }
 
+    public ScheduleObjectApiResponse toApiResponse(ScheduleObjectDocument scheduleObject){
+        ScheduleObjectApiResponse scheduleObjectResult = new ScheduleObjectApiResponse();
+        scheduleObjectResult.setGroups(scheduleObject.getGroups());
+        scheduleObjectResult.setPlace(scheduleObject.getPlace());
+        scheduleObjectResult.setTeacher(scheduleObject.getTeacher());
+        scheduleObjectResult.setName(scheduleObject.getName());
+        scheduleObjectResult.setType(scheduleObject.getType().toString());
+        return scheduleObjectResult;
+    }
+
     public ScheduleObjectParserResponse toResponse(ScheduleObjectDocument scheduleObject) {
          ScheduleObjectParserResponse scheduleObjectResult = new ScheduleObjectParserResponse();
          scheduleObjectResult.setGroups(scheduleObject.getGroups());
@@ -47,26 +57,6 @@ public class ScheduleObjectMapper {
              list.add(toResponse(scheduleObject));
          }
          return list;
-    }
-
-    public ScheduleObjectApiResponse toApiResponse(ScheduleObjectDocument scheduleObject){
-         ScheduleObjectApiResponse scheduleObjectResult = new ScheduleObjectApiResponse();
-         scheduleObjectResult.setGroups(scheduleObject.getGroups());
-         scheduleObjectResult.setPlace(scheduleObject.getPlace());
-         scheduleObjectResult.setTeacher(scheduleObject.getTeacher());
-         scheduleObjectResult.setName(scheduleObject.getName());
-        scheduleObjectResult.setType(scheduleObject.getType().toString());
-         return scheduleObjectResult;
-    }
-
-    public ScheduleObjectDocument fromApiResponse(ScheduleObjectApiResponse scheduleObjectApiResponse) {
-         ScheduleObjectDocument scheduleObjectDocument = new ScheduleObjectDocument();
-         scheduleObjectDocument.setGroups(scheduleObjectApiResponse.getGroups());
-         scheduleObjectDocument.setPlace(scheduleObjectApiResponse.getPlace());
-         scheduleObjectDocument.setTeacher(scheduleObjectApiResponse.getTeacher());
-         scheduleObjectDocument.setName(scheduleObjectApiResponse.getName());
-         scheduleObjectDocument.setType(ScheduleType.valueOf(scheduleObjectApiResponse.getType()));
-         return scheduleObjectDocument;
     }
 
 }

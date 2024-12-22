@@ -15,19 +15,22 @@ import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
 import java.util.List;
 
 public interface ScheduleService {
-
     ScheduleDocument importSchedule(ImportDto importDto, String username) throws ScheduleNotFoundException, ParserException;
 
     ScheduleDocument forceImportSchedule(ImportDto importDto, String username) throws ParserException, ScheduleNotFoundException;
 
     ScheduleDocument createSchedule(ScheduleParserResponse saveDto, String username);
-    ScheduleDayDocument saveScheduleDay(ScheduleDayParserResponse saveDto, String username);
+
+    ScheduleDayDocument saveScheduleDay(ScheduleDayParserResponse saveDayResponse, String scheduleDayId, String userName) throws StudentNotFoundException, ScheduleNotFoundException;
 
     void deleteSchedule(String id, String username) throws ScheduleNotFoundException, StudentNotFoundException;
 
     ScheduleDocument deleteScheduleDay(String dayId, String username) throws ScheduleNotFoundException, StudentNotFoundException;
+
     ScheduleDocument deleteLesson(String scheduleDayId, String timeWindowId, String username) throws ScheduleNotFoundException, StudentNotFoundException;
+
     ScheduleDocument getScheduleById(String scheduleId) throws ScheduleNotFoundException;
+
     ScheduleDocument getScheduleByStudentName(String studentName) throws ScheduleNotFoundException, StudentNotFoundException;
 
 }

@@ -185,7 +185,7 @@ public class ScheduleMapper {
                                         .withRel("getScheduleDay")
                                         .withType("GET"),
                                 linkTo(
-                                        methodOn(ScheduleController.class).createScheduleDay(null, null))
+                                        methodOn(ScheduleController.class).createScheduleDay(null, null, null))
                                         .withRel("createScheduleDay")
                                         .withType("POST"),
                                 linkTo(

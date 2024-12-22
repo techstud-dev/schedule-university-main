@@ -3,10 +3,9 @@ package com.techstud.scheduleuniversity.repository.mongo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.gson.Gson;
 import com.techstud.scheduleuniversity.dao.HashableDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheetDocument;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleDayParserResponse;
@@ -26,8 +25,10 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.DayOfWeek;
+import java.util.*;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Stream;
 
 @Component
 @Slf4j
@@ -138,21 +139,19 @@ public class ScheduleRepositoryFacade {
         return result;
     }
 
-
-    private ScheduleDayDocument cascadeDaySave(ScheduleDayParserResponse scheduleDayDto) {
+    public ScheduleDayDocument cascadeDaySave(ScheduleDayParserResponse scheduleDayDto) {
         try {
             ScheduleDayDocument scheduleDay = new ScheduleDayDocument();
             scheduleDay.setDate(scheduleDayDto.getDate());
             scheduleDay.setLessons(cascadeLessonSave(scheduleDayDto.getLessons()));
             computeAndSetHash(scheduleDay);
-
             return findOrSave(scheduleDay, ScheduleDayDocument.class, scheduleDayRepository);
         } catch (Exception e) {
             throw new RuntimeException("Error cascade save day", e);
         }
     }
 
-    private Map<String, List<ScheduleObjectDocument>> cascadeLessonSave(
+    public Map<String, List<ScheduleObjectDocument>> cascadeLessonSave(
             Map<TimeSheetParserResponse, List<ScheduleObjectParserResponse>> lessons) {
 
         Map<String, List<ScheduleObjectDocument>> result = new LinkedHashMap<>();
@@ -186,16 +185,18 @@ public class ScheduleRepositoryFacade {
         return existingEntity != null ? existingEntity : repository.save(entity);
     }
 
+
     private <T extends HashableDocument> T findExistingByHash(T entity, Class<T> entityClass) {
         Query query = new Query(Criteria.where("hash").is(entity.getHash()));
         return mongoTemplate.findOne(query, entityClass);
     }
 
-    private void computeAndSetHash(HashableDocument entity) throws Exception {
+    public void computeAndSetHash(HashableDocument entity) throws Exception {
         String json = objectMapper.writeValueAsString(entity);
         String hash = computeSHA256Hash(json);
         entity.setHash(hash);
     }
+
 
     private String computeSHA256Hash(String input) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");

@@ -14,6 +14,9 @@ import java.util.List;
 public class ValidationService implements RequestValidationService, ResponseValidationService {
     @Override
     public void validateImportRequest(ApiRequest<ImportDto> importRequest) throws RequestException {
+        if (importRequest == null) {
+           throw new RequestException("Import Request is null");
+        }
         List<String> emptyFields = new ArrayList<>();
 
         if (importRequest.getRequestId() == null) {

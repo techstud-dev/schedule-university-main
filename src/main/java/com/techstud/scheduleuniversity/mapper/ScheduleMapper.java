@@ -3,15 +3,18 @@ package com.techstud.scheduleuniversity.mapper;
 import com.techstud.scheduleuniversity.controller.ScheduleController;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
-import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleApiResponse;
-import com.techstud.scheduleuniversity.dto.response.scheduleV.ScheduleItem;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
+import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
+import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
 import com.techstud.scheduleuniversity.repository.mongo.TimeSheetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Component;
 
-import java.text.SimpleDateFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -22,6 +25,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ScheduleMapper {
 
     private final TimeSheetRepository timeSheetRepository;
@@ -36,8 +40,64 @@ public class ScheduleMapper {
             DayOfWeek.SUNDAY, "Воскресенье"
     );
 
-    private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+
+    @SneakyThrows
+    public CollectionModel<EntityModel<ScheduleItem>> toResponse(ScheduleDocument documentSchedule,
+                                                                 String scheduleDayId) {
+        var oddWeekSchedulesDocument = documentSchedule.getOddWeekSchedule();
+        var evenWeekSchedulesDocument = documentSchedule.getEvenWeekSchedule();
+
+        oddWeekSchedulesDocument.entrySet().removeIf(entry -> !entry.getValue().getId().equals(scheduleDayId));
+        evenWeekSchedulesDocument.entrySet().removeIf(entry -> !entry.getValue().getId().equals(scheduleDayId));
+
+        List<EntityModel<ScheduleItem>> result;
+        if (!oddWeekSchedulesDocument.isEmpty()) {
+            result = mapWeek(oddWeekSchedulesDocument, false);
+        } else {
+            result = mapWeek(evenWeekSchedulesDocument, true);
+        }
+        return CollectionModel.of(result);
+    }
+
+    @SneakyThrows
+    public CollectionModel<EntityModel<ScheduleItem>> toResponse(ScheduleDocument documentSchedule,
+                                                                 String scheduleDayId,
+                                                                 String timeWindowId) {
+        var oddWeekSchedulesDocument = documentSchedule.getOddWeekSchedule();
+        var evenWeekSchedulesDocument = documentSchedule.getEvenWeekSchedule();
+
+        oddWeekSchedulesDocument.entrySet().removeIf(entry -> !entry.getValue().getId().equals(scheduleDayId));
+        evenWeekSchedulesDocument.entrySet().removeIf(entry -> !entry.getValue().getId().equals(scheduleDayId));
+
+        oddWeekSchedulesDocument.forEach((dayOfWeek, scheduleDay) -> {
+            var lessons = new HashMap<>(scheduleDay.getLessons());
+            lessons.forEach((timeWindowId1, scheduleObjects) -> {
+                if (!timeWindowId1.equals(timeWindowId)) {
+                    scheduleDay.getLessons().remove(timeWindowId1);
+                }
+            });
+        });
+
+        evenWeekSchedulesDocument.forEach((dayOfWeek, scheduleDay) -> {
+            var lessons = new HashMap<>(scheduleDay.getLessons());
+            lessons.forEach((timeWindowId1, scheduleObjects) -> {
+                if (!timeWindowId1.equals(timeWindowId)) {
+                    scheduleDay.getLessons().remove(timeWindowId1);
+                }
+            });
+        });
+
+        List<EntityModel<ScheduleItem>> result;
+        if (!oddWeekSchedulesDocument.isEmpty()) {
+            result = mapWeek(oddWeekSchedulesDocument, false);
+        } else {
+            result = mapWeek(evenWeekSchedulesDocument, true);
+        }
+        return CollectionModel.of(result);
+    }
+
+
 
     @SneakyThrows
     public EntityModel<ScheduleApiResponse> toResponse(ScheduleDocument documentSchedule) {
@@ -84,65 +144,68 @@ public class ScheduleMapper {
     private List<EntityModel<ScheduleItem>> mapWeek(Map<DayOfWeek, ScheduleDayDocument> documentWeek, boolean isEven) {
         List<EntityModel<ScheduleItem>> response = new ArrayList<>();
         documentWeek.forEach((dayOfWeek, scheduleDay) -> {
-            scheduleDay.getLessons().forEach((timeSheetId, scheduleObjects) -> {
+            scheduleDay.getLessons().forEach((timeWindowId, scheduleObjects) -> {
                 scheduleObjects.forEach(scheduleObject -> {
                     ScheduleItem scheduleItem = new ScheduleItem();
                     scheduleItem.setId(scheduleObject.getId());
                     scheduleItem.setEven(isEven);
                     scheduleItem.setDayOfWeek(RU_DAYS_OF_WEEK.get(dayOfWeek));
                     scheduleItem.setDate(mapDate(scheduleDay.getDate(), dayOfWeek));
-                    scheduleItem.setTime(mapTime(timeSheetId));
+                    scheduleItem.setTime(mapTime(timeWindowId));
                     scheduleItem.setType(scheduleObject.getType().getRuName());
                     scheduleItem.setName(scheduleObject.getName());
                     scheduleItem.setTeacher(scheduleObject.getTeacher() == null ? "-" : scheduleObject.getTeacher());
                     scheduleItem.setPlace(scheduleObject.getPlace());
                     scheduleItem.setGroups(scheduleObject.getGroups());
 
-                    EntityModel<ScheduleItem> scheduleItemEntity = EntityModel.of(scheduleItem,
-                            linkTo(
-                                    methodOn(ScheduleController.class).getLesson(scheduleDay.getId(), timeSheetId,
-                                            null))
-                                    .withRel("getScheduleObject")
-                                    .withType("GET"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).updateLesson(scheduleDay.getId(), timeSheetId,
-                                            null, null))
-                                    .withRel("updateScheduleObject")
-                                    .withType("PUT"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).deleteLesson(scheduleDay.getId(), timeSheetId,
-                                            null))
-                                    .withRel("deleteScheduleObject")
-                                    .withType("DELETE"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).saveLesson(null, null))
-                                    .withRel("createScheduleObject")
-                                    .withType("POST"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).getScheduleDay(scheduleDay.getId(), null))
-                                    .withRel("getScheduleDay")
-                                    .withType("GET"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).createScheduleDay(null, null))
-                                    .withRel("createScheduleDay")
-                                    .withType("POST"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).updateScheduleDay(scheduleDay.getId(),
-                                            null, null))
-                                    .withRel("updateScheduleDay")
-                                    .withType("PUT"),
-                            linkTo(
-                                    methodOn(ScheduleController.class).deleteScheduleDay(scheduleDay.getId(), null))
-                                    .withRel("deleteScheduleDay")
-                                    .withType("DELETE")
-
-                    );
+                    EntityModel<ScheduleItem> scheduleItemEntity = null;
+                    try {
+                        scheduleItemEntity = EntityModel.of(scheduleItem,
+                                linkTo(
+                                        methodOn(ScheduleController.class).getLesson(scheduleDay.getId().toString(), timeWindowId,
+                                                null))
+                                        .withRel("getScheduleObject")
+                                        .withType("GET"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).updateLesson(scheduleDay.getId(), timeWindowId,
+                                                null, null))
+                                        .withRel("updateScheduleObject")
+                                        .withType("PUT"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).deleteLesson(scheduleDay.getId(), timeWindowId,
+                                                null))
+                                        .withRel("deleteScheduleObject")
+                                        .withType("DELETE"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).saveLesson(null, null))
+                                        .withRel("createScheduleObject")
+                                        .withType("POST"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).getScheduleDay(scheduleDay.getId(), null))
+                                        .withRel("getScheduleDay")
+                                        .withType("GET"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).createScheduleDay(null, null))
+                                        .withRel("createScheduleDay")
+                                        .withType("POST"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).updateScheduleDay(scheduleDay.getId(),
+                                                null, null))
+                                        .withRel("updateScheduleDay")
+                                        .withType("PUT"),
+                                linkTo(
+                                        methodOn(ScheduleController.class).deleteScheduleDay(scheduleDay.getId(), null))
+                                        .withRel("deleteScheduleDay")
+                                        .withType("DELETE")
+                        );
+                    } catch (ScheduleNotFoundException | StudentNotFoundException ignored) {}
                     response.add(scheduleItemEntity);
                 });
             });
         });
         return response;
     }
+
 
 
     private long mapDate(Date date, DayOfWeek dayOfWeek) {

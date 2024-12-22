@@ -11,6 +11,7 @@ import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserRespons
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
+import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
 import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
 import com.techstud.scheduleuniversity.repository.jpa.StudentRepository;
@@ -83,6 +84,10 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .findByUsername(username)
                 .orElseGet(() -> studentRepository.save(new Student(username)));
 
+        if (student.getScheduleMongoId() != null) {
+            scheduleRepository.deleteById(student.getScheduleMongoId());
+        }
+
         savedDocument = scheduleRepositoryFacade.cascadeSave(saveDto);
 
         student.setLastAction(LocalDate.now());
@@ -110,6 +115,68 @@ public class ScheduleServiceImpl implements ScheduleService {
         return scheduleDocument;
     }
 
+    @Override
+    @Transactional
+    public void deleteSchedule(String scheduleId, String username) throws ScheduleNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + username));
+
+        String scheduleDbId = student.getScheduleMongoId();
+
+        if (!scheduleDbId.equals(scheduleId)) {
+            throw new ScheduleNotFoundException("Schedule scheduleId does not match student's schedule scheduleId");
+        }
+
+        scheduleRepository.deleteById(scheduleId);
+        student.setScheduleMongoId(null);
+        studentRepository.save(student);
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument deleteScheduleDay(String dayId, String username) throws ScheduleNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + username));
+
+        String scheduleId = student.getScheduleMongoId();
+
+        ScheduleDocument schedule = getScheduleById(scheduleId);
+
+        ScheduleDayDocument scheduleDay = scheduleDayRepository.findById(dayId)
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule day not found for id: " + dayId));
+
+        return scheduleRepositoryFacade.smartScheduleDayDelete(schedule, scheduleDay);
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument deleteLesson(String scheduleDayId, String timeWindowId, String username) throws ScheduleNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + username));
+
+
+        ScheduleDocument schedule = getScheduleById(student.getScheduleMongoId());
+
+        return scheduleRepositoryFacade.smartLessonDelete(schedule, scheduleDayId, timeWindowId);
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument getScheduleById(String scheduleId) throws ScheduleNotFoundException {
+        return scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found for id: " + scheduleId));
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument getScheduleByStudentName(String studentName) throws ScheduleNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.findByUsername(studentName)
+                .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + studentName));
+
+        return scheduleRepository.findById(student.getScheduleMongoId())
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found for student: " + studentName));
+    }
+
     private ScheduleDocument fetchAndSaveSchedule(UniversityGroup group, Student student) throws ParserException {
         ScheduleDocument savedSchedule = null;
         ParsingTask parsingTask = ParsingTask.builder()
@@ -121,12 +188,38 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         try {
             var parserSchedule = messageObserver.waitForParserResponse(uuid);
-            if(parserSchedule != null) {
+            if (parserSchedule != null) {
                 savedSchedule = scheduleRepositoryFacade.cascadeSave(parserSchedule);
+                scheduleRepository.deleteById(student.getScheduleMongoId());
                 student.setScheduleMongoId(savedSchedule.getId());
                 studentRepository.save(student);
             }
         } catch (ParserResponseTimeoutException  e) {
+            log.error("Error while waiting for parser response", e);
+        }
+        return savedSchedule;
+    }
+
+    private ScheduleDocument fullFetchAndSaveSchedule(UniversityGroup group, Student student) throws ParserException {
+        ScheduleDocument savedSchedule = null;
+        ParsingTask parsingTask = ParsingTask.builder()
+                .groupId(group.getUniversityGroupId())
+                .universityName(group.getUniversity().getShortName())
+                .build();
+
+        UUID uuid = kafkaProducer.sendToParsingQueue(parsingTask);
+
+        try {
+            var parserSchedule = messageObserver.waitForParserResponse(uuid);
+            if (parserSchedule != null) {
+                savedSchedule = scheduleRepositoryFacade.cascadeSave(parserSchedule);
+                if (student.getScheduleMongoId() != null) {
+                    scheduleRepository.deleteById(student.getScheduleMongoId());
+                }
+                student.setScheduleMongoId(savedSchedule.getId());
+                studentRepository.save(student);
+            }
+        } catch (ParserResponseTimeoutException e) {
             log.error("Error while waiting for parser response", e);
         }
         return savedSchedule;
@@ -144,4 +237,3 @@ public class ScheduleServiceImpl implements ScheduleService {
         return null;
     }
 }
-

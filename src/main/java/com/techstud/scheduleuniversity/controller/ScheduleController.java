@@ -309,12 +309,14 @@ public class ScheduleController {
 
     @PutMapping("/scheduleDay/{scheduleDayId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<EntityModel<ScheduleItem>> updateScheduleDay(
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> updateScheduleDay(
             @Parameter(description = "ID дня расписания", required = true, example = "6763cdfcf16fce69d8f52945")
             @PathVariable String scheduleDayId,
-            @RequestBody ApiRequest<Object> updateObject,
-            @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+            @RequestBody ApiRequest<List<ScheduleItem>> updateObject,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+        log.info("Incoming request to update schedule day, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
+        ScheduleDocument updatedSchedule = scheduleService.updateScheduleDay(scheduleDayId, updateObject.getData(), principal.getName());
+        return ResponseEntity.ok(scheduleMapper.toResponse(updatedSchedule));
     }
 
     @Operation(
@@ -388,11 +390,15 @@ public class ScheduleController {
 
     @PutMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<EntityModel<List<ScheduleItem>>> updateLesson(@PathVariable String scheduleDayId,
-                                                                     @PathVariable String timeWindow,
-                                                                     @RequestBody ApiRequest<Object> updateObject,
-                                                                     @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> updateLesson(
+            @PathVariable String scheduleDayId,
+            @PathVariable String timeWindow,
+            @RequestBody ApiRequest<ScheduleItem> updateRequest,
+            @Parameter(hidden = true) Principal principal)
+            throws ScheduleNotFoundException, StudentNotFoundException {
+        log.info("Incoming request to update lesson, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
+        ScheduleDocument updatedSchedule = scheduleService.updateLesson(scheduleDayId, timeWindow, updateRequest.getData(), principal.getName());
+        return ResponseEntity.ok(scheduleMapper.toResponse(updatedSchedule));
     }
 
     @Operation(

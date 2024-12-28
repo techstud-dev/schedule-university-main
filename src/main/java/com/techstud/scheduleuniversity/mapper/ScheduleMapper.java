@@ -117,11 +117,6 @@ public class ScheduleMapper {
                         .withRel("getSchedule")
                         .withType("GET"),
                 linkTo(
-                        methodOn(ScheduleController.class).updateSchedule(documentSchedule.getId(),
-                                null, null))
-                        .withRel("updateSchedule")
-                        .withType("PUT"),
-                linkTo(
                         methodOn(ScheduleController.class).deleteSchedule(documentSchedule.getId(), null))
                         .withRel("deleteSchedule")
                         .withType("DELETE"),

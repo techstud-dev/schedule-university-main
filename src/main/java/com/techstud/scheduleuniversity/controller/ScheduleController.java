@@ -232,16 +232,6 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleMapper.toResponse(documentSchedule));
     }
 
-    @PutMapping("/{scheduleId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<EntityModel<ScheduleApiResponse>> updateSchedule(
-            @Parameter(description = "ID расписания", required = true, example = "6763cdfcf16fce69d8f52945")
-            @PathVariable String scheduleId,
-            @RequestBody ApiRequest<Object> updateObject,
-            @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
     @Operation(
             summary = "Запрос на удаление расписания",
             description = "Удаляет расписание из БД по ID расписания и пользователю.",
@@ -307,6 +297,25 @@ public class ScheduleController {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
+    @Operation(
+            summary = "Запрос на обновление дня расписания",
+            description = "Обновляет день расписания из БД по ID дня и пользователю.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное обновление дня расписания",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @PutMapping("/scheduleDay/{scheduleDayId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> updateScheduleDay(
@@ -388,6 +397,25 @@ public class ScheduleController {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
+    @Operation(
+            summary = "Запрос на обновление занятия",
+            description = "Обновляет занятие из БД по ID дня, ID временного окна и пользователю.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное обновление дня расписания",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @PutMapping("/scheduleDay/lesson/{scheduleDayId}/{timeWindow}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> updateLesson(

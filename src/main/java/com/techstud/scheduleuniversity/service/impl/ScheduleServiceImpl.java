@@ -2,11 +2,13 @@ package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dao.entity.Student;
 import com.techstud.scheduleuniversity.dao.entity.UniversityGroup;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
+import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
 import com.techstud.scheduleuniversity.exception.ParserException;
 import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -178,6 +181,36 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         return scheduleRepository.findById(student.getScheduleMongoId())
                 .orElseThrow(() -> new ScheduleNotFoundException("Schedule not found for student: " + studentName));
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument updateLesson(String scheduleDayId, String timeWindowId, ScheduleItem scheduleItem, String username) throws ScheduleNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + username));
+
+        ScheduleDocument schedule = getScheduleById(student.getScheduleMongoId());
+
+        schedule = scheduleRepositoryFacade.smartLessonUpdate(schedule, scheduleDayId, timeWindowId, scheduleItem);
+        student.setScheduleMongoId(schedule.getId());
+        studentRepository.save(student);
+
+        return schedule;
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument updateScheduleDay(String dayId, List<ScheduleItem> scheduleItems, String username) throws ScheduleNotFoundException, StudentNotFoundException {
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(()-> new StudentNotFoundException("Student not found for username: " + username));
+
+        ScheduleDocument schedule = getScheduleById(student.getScheduleMongoId());
+
+        schedule = scheduleRepositoryFacade.smartScheduleDayUpdate(schedule, dayId, scheduleItems);
+        student.setScheduleMongoId(schedule.getId());
+        studentRepository.save(student);
+
+        return schedule;
     }
 
     private ScheduleDocument fetchAndSaveSchedule(UniversityGroup group, Student student) throws ParserException {

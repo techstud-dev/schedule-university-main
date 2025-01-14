@@ -20,4 +20,13 @@ public enum ScheduleType implements Serializable {
     UNKNOWN("Другое");
 
     private final String ruName;
+
+    public static ScheduleType ruValueOf(String ruValue) {
+        for (ScheduleType scheduleType : values()) {
+            if (scheduleType.ruName.equals(ruValue)) {
+                return scheduleType;
+            }
+        }
+        return UNKNOWN;
+    }
 }

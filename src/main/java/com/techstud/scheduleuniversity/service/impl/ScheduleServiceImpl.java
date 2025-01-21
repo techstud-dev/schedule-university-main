@@ -2,7 +2,6 @@ package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dao.entity.Student;
 import com.techstud.scheduleuniversity.dao.entity.UniversityGroup;
 import com.techstud.scheduleuniversity.dto.ImportDto;
@@ -27,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -259,5 +259,40 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.error("Error while waiting for parser response", e);
         }
         return savedSchedule;
+    }
+
+
+    @Override
+    @Transactional
+    public ScheduleDocument saveScheduleDay(
+            List<ScheduleItem> data,
+            String userName) {
+        Student student = studentRepository.findByUsername(userName)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found for username: ".formatted(userName)));
+        log.info("Successful search for a student on username, {}", userName);
+
+        ScheduleDocument schedule = scheduleRepository.findById(student.getScheduleMongoId())
+                .orElseThrow(() -> new IllegalArgumentException("Schedule not found for student: " + student.getUsername()));
+        log.info("Successful search Schedule with id, {}", schedule.getId());
+
+        return scheduleRepositoryFacade.smartScheduleDaySearch(data, schedule)
+                .map(existingDay -> {
+                    log.info("Successful day update by id: {}", existingDay.getId());
+                    student.setScheduleMongoId(schedule.getId());
+                    studentRepository.save(student);
+                    return scheduleRepositoryFacade.smartScheduleDayUpdate(
+                            scheduleRepository.findById(student.getScheduleMongoId()).get(),
+                            existingDay.getId(),
+                            data);
+                })
+                .orElseGet(() -> {
+                    log.info("Successful day save for schedule: {}", schedule.getId());
+                    student.setScheduleMongoId(schedule.getId());
+                    studentRepository.save(student);
+                    return scheduleRepositoryFacade.smartScheduleDaySave(
+                            schedule,
+                            data
+                    );
+                });
     }
 }

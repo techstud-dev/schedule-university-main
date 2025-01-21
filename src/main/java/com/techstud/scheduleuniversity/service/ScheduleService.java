@@ -11,6 +11,8 @@ import javax.swing.text.html.parser.Parser;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
 
+import java.security.Principal;
+import java.util.Date;
 import java.util.List;
 
 public interface ScheduleService {
@@ -42,4 +44,5 @@ public interface ScheduleService {
     ScheduleDocument updateScheduleDay(String dayId, List<ScheduleItem> scheduleItems, String username)
             throws ScheduleNotFoundException, StudentNotFoundException;
 
+    ScheduleDocument saveScheduleDay(List<ScheduleItem> data, String userName);
 }

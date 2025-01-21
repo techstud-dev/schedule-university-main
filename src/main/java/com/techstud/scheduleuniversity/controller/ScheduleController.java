@@ -33,6 +33,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -290,11 +293,17 @@ public class ScheduleController {
         return ResponseEntity.ok().body(scheduleMapper.toResponse(scheduleDocument, scheduleDayId));
     }
 
-    @PostMapping("/scheduleDay/")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public EntityModel<ScheduleItem> createScheduleDay(@RequestBody ApiRequest<Object> saveObject,
-                                                                 @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    @PostMapping("/scheduleDay/save")
+    //@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> createScheduleDay(
+            @RequestBody ApiRequest<List<ScheduleItem>> saveScheduleDay,
+            @Parameter(hidden = true) Principal principal) {
+        log.info("Successful request to create schedule day, scheduleDay: {}, user: {}", saveScheduleDay, principal.getName());
+        return ResponseEntity.ok(scheduleMapper.toResponse(scheduleService.saveScheduleDay(
+                saveScheduleDay.getData(),
+                principal.getName()
+        )));
+
     }
 
     @Operation(

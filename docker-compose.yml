@@ -55,7 +55,6 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: abuser
       ME_CONFIG_MONGODB_URL: mongodb://abuser:abuser@mongo:27017/
       ME_CONFIG_BASICAUTH: false
-
 volumes:
   postgres_data:
   grafana_data:

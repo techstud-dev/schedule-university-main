@@ -3,13 +3,11 @@ package com.techstud.scheduleuniversity.repository.mongo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.gson.Gson;
 import com.techstud.scheduleuniversity.dao.HashableDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheetDocument;
-import com.techstud.scheduleuniversity.dto.ScheduleType;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleDayParserResponse;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleObjectParserResponse;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
@@ -27,10 +25,12 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.time.DayOfWeek;
-import java.time.LocalTime;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+
+import static com.techstud.scheduleuniversity.dto.ScheduleType.ruValueOf;
 
 @Component
 @Slf4j
@@ -134,19 +134,19 @@ public class ScheduleRepositoryFacade {
         updatedScheduleObject.setName(scheduleObjectDocument.getName());
         updatedScheduleObject.setTeacher(scheduleObjectDocument.getTeacher());
         updatedScheduleObject.setGroups(scheduleObjectDocument.getGroups());
-        updatedScheduleObject.setType(ScheduleType.ruValueOf(scheduleObjectDocument.getType()));
+        updatedScheduleObject.setType(ruValueOf(scheduleObjectDocument.getType()));
         updatedScheduleObject.setPlace(scheduleObjectDocument.getPlace());
 
         scheduleDocument.getOddWeekSchedule().forEach((dayOfWeek, scheduleDay) -> {
             if (scheduleDay.getId().equals(scheduleDayId)) {
                 Map<String, List<ScheduleObjectDocument>> lessons = scheduleDay.getLessons();
-                    updatedScheduleObject.setId(lessons.get(timeWindowId).get(0).getId());
-                    updatedScheduleObject.setHash(findOrSave(
-                            updatedScheduleObject,
-                            ScheduleObjectDocument.class,
-                            scheduleObjectRepository).getHash());
-                    lessons.put(timeWindowId, List.of(updatedScheduleObject));
-                    scheduleDay.setLessons(lessons);
+                updatedScheduleObject.setId(lessons.get(timeWindowId).get(0).getId());
+                updatedScheduleObject.setHash(findOrSave(
+                        updatedScheduleObject,
+                        ScheduleObjectDocument.class,
+                        scheduleObjectRepository).getHash());
+                lessons.put(timeWindowId, List.of(updatedScheduleObject));
+                scheduleDay.setLessons(lessons);
             }
         });
 
@@ -199,7 +199,7 @@ public class ScheduleRepositoryFacade {
                 scheduleObjectDocument.setName(scheduleItem.getName());
                 scheduleObjectDocument.setTeacher(scheduleItem.getTeacher());
                 scheduleObjectDocument.setGroups(scheduleItem.getGroups());
-                scheduleObjectDocument.setType(ScheduleType.ruValueOf(scheduleItem.getType()));
+                scheduleObjectDocument.setType(ruValueOf(scheduleItem.getType()));
                 scheduleObjectDocument.setPlace(scheduleItem.getPlace());
                 computeAndSetHash(scheduleObjectDocument);
 
@@ -289,7 +289,6 @@ public class ScheduleRepositoryFacade {
             scheduleDay.setDate(scheduleDayDto.getDate());
             scheduleDay.setLessons(cascadeLessonSave(scheduleDayDto.getLessons()));
             computeAndSetHash(scheduleDay);
-
             return findOrSave(scheduleDay, ScheduleDayDocument.class, scheduleDayRepository);
         } catch (Exception e) {
             throw new RuntimeException("Error cascade save day", e);
@@ -332,14 +331,14 @@ public class ScheduleRepositoryFacade {
                     scheduleObjectDocument.setName(scheduleItem.getName());
                     scheduleObjectDocument.setTeacher(scheduleItem.getTeacher());
                     scheduleObjectDocument.setGroups(scheduleItem.getGroups());
-                    scheduleObjectDocument.setType(ScheduleType.ruValueOf(scheduleItem.getType()));
+                    scheduleObjectDocument.setType(ruValueOf(scheduleItem.getType()));
                     scheduleObjectDocument.setPlace(scheduleItem.getPlace());
                     return scheduleObjectDocument;
                 })
                 .toList();
     }
 
-    private <T extends HashableDocument> T findOrSave(T entity, Class<T> entityClass, MongoRepository<T, String> repository) {
+    public <T extends HashableDocument> T findOrSave(T entity, Class<T> entityClass, MongoRepository<T, String> repository) {
         T existingEntity = findExistingByHash(entity, entityClass);
         return existingEntity != null ? existingEntity : repository.save(entity);
     }
@@ -349,10 +348,14 @@ public class ScheduleRepositoryFacade {
         return mongoTemplate.findOne(query, entityClass);
     }
 
-    private void computeAndSetHash(HashableDocument entity) throws Exception {
-        String json = objectMapper.writeValueAsString(entity);
-        String hash = computeSHA256Hash(json);
-        entity.setHash(hash);
+    public void computeAndSetHash(HashableDocument entity) {
+        try {
+            String json = objectMapper.writeValueAsString(entity);
+            String hash = computeSHA256Hash(json);
+            entity.setHash(hash);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to compute hash ", e);
+        }
     }
 
     private String computeSHA256Hash(String input) throws Exception {
@@ -360,4 +363,43 @@ public class ScheduleRepositoryFacade {
         byte[] hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
         return Base64.getEncoder().encodeToString(hashBytes);
     }
+
+    public Map<String, List<ScheduleObjectDocument>> convertItemToLessons(List<ScheduleItem> items) {
+        log.info("Items to lessons, {}", items);
+        Map<String, List<ScheduleObjectDocument>> lessons = new LinkedHashMap<>();
+
+        items.forEach(item -> {
+            String from = item.getTime()
+                    .split("-")[0];
+            String to = item.getTime()
+                    .split("-")[1];
+
+            TimeSheetDocument timeSheetDocument = TimeSheetDocument.builder()
+                    .from(LocalTime.parse(from, DateTimeFormatter.ofPattern("HH:mm")))
+                    .to(LocalTime.parse(to, DateTimeFormatter.ofPattern("HH:mm")))
+                    .build();
+
+            ScheduleObjectDocument scheduleObjectDocument = ScheduleObjectDocument.builder()
+                    .name(item.getName())
+                    .teacher(item.getTeacher())
+                    .groups(item.getGroups())
+                    .type(ruValueOf(item.getType()))
+                    .place(item.getPlace())
+                    .build();
+
+            computeAndSetHash(scheduleObjectDocument);
+            computeAndSetHash(timeSheetDocument);
+
+            timeSheetRepository.save(timeSheetDocument);
+            scheduleObjectRepository.save(scheduleObjectDocument);
+
+            lessons
+                    .computeIfAbsent(timeSheetDocument.getId(), v -> new ArrayList<>())
+                    .add(scheduleObjectDocument);
+        });
+
+        return lessons;
+    }
 }
+
+

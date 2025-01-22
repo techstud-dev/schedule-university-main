@@ -2,7 +2,6 @@ package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dao.entity.Student;
 import com.techstud.scheduleuniversity.dao.entity.UniversityGroup;
 import com.techstud.scheduleuniversity.dto.ImportDto;
@@ -26,9 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
+import java.time.ZoneId;
+import java.util.*;
+
+import static com.techstud.scheduleuniversity.dto.ScheduleType.ruValueOf;
 
 @Service
 @RequiredArgsConstructor
@@ -259,5 +262,61 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.error("Error while waiting for parser response", e);
         }
         return savedSchedule;
+    }
+
+
+    @Override
+    @Transactional
+    public ScheduleDocument saveScheduleDay(
+            List<ScheduleItem> items,
+            String userName) throws IllegalStateException {
+        Student student = studentRepository.findByUsername(userName)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found for username: ".formatted(userName)));
+        log.info("Successful search for a student on username, {}", userName);
+
+        ScheduleDocument schedule = scheduleRepository.findById(student.getScheduleMongoId())
+                .orElseThrow(() -> new IllegalArgumentException("Schedule not found for student: " + student.getUsername()));
+        log.info("Successful search Schedule with id, {}", schedule.getId());
+
+        var dayOfWeek = Instant.ofEpochMilli(items.stream()
+                        .map(ScheduleItem::getDate)
+                        .findFirst()
+                        .get())
+                .atZone(ZoneId.systemDefault()).getDayOfWeek();
+
+        var isEvenWeek = items.stream().map(ScheduleItem::isEven).findFirst();
+
+        Map<DayOfWeek,ScheduleDayDocument> week = new LinkedHashMap<>();
+
+        if(isEvenWeek.isPresent()) {
+            week = schedule.getEvenWeekSchedule();
+        } else {
+            week = schedule.getOddWeekSchedule();
+        }
+        log.info("Successful add a week, {}", week);
+
+        var isDayOnWeek = week.keySet().stream().filter(key -> key.equals(dayOfWeek)).findFirst();
+
+        if(!isDayOnWeek.isPresent()) {
+            ScheduleDayDocument scheduleDay = ScheduleDayDocument.builder()
+                    .date(items.stream().map(item -> new Date(item.getDate())).findFirst().get())
+                    .lessons(scheduleRepositoryFacade.convertItemToLessons(items))
+                    .build();
+
+            scheduleRepositoryFacade.computeAndSetHash(scheduleDay);
+            scheduleDayRepository.save(scheduleDay);
+            log.info("Successful save day, {}", scheduleDay);
+
+            if(isEvenWeek.isPresent()){
+                schedule.getEvenWeekSchedule().put(dayOfWeek, scheduleDay);
+            } else {
+                schedule.getOddWeekSchedule().put(dayOfWeek, scheduleDay);
+            }
+        } else {
+            throw new IllegalStateException("Schedule day, %s, already exists in week: ".formatted(dayOfWeek));
+        }
+
+        scheduleRepositoryFacade.computeAndSetHash(schedule);
+        return scheduleRepository.save(schedule);
     }
 }

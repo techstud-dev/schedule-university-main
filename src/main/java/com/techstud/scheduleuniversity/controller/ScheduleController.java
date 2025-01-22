@@ -293,8 +293,27 @@ public class ScheduleController {
         return ResponseEntity.ok().body(scheduleMapper.toResponse(scheduleDocument, scheduleDayId));
     }
 
+    @Operation(
+            summary = "Запрос на сохранение нового дня расписания",
+            description = "Сохраняет день расписания в БД используя входящие данные и пользователя",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное сохранение дня расписания",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Не авторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @PostMapping("/scheduleDay/save")
-    //@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> createScheduleDay(
             @RequestBody ApiRequest<List<ScheduleItem>> saveScheduleDay,
             @Parameter(hidden = true) Principal principal) {

@@ -44,5 +44,5 @@ public interface ScheduleService {
     ScheduleDocument updateScheduleDay(String dayId, List<ScheduleItem> scheduleItems, String username)
             throws ScheduleNotFoundException, StudentNotFoundException;
 
-    ScheduleDocument saveScheduleDay(List<ScheduleItem> data, String userName);
+    ScheduleDocument saveScheduleDay(List<ScheduleItem> data, String userName) throws IllegalStateException;
 }

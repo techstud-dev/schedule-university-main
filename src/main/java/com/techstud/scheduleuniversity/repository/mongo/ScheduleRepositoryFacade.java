@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -337,7 +338,7 @@ public class ScheduleRepositoryFacade {
                 .toList();
     }
 
-    private <T extends HashableDocument> T findOrSave(T entity, Class<T> entityClass, MongoRepository<T, String> repository) {
+    public <T extends HashableDocument> T findOrSave(T entity, Class<T> entityClass, MongoRepository<T, String> repository) {
         T existingEntity = findExistingByHash(entity, entityClass);
         return existingEntity != null ? existingEntity : repository.save(entity);
     }
@@ -347,7 +348,7 @@ public class ScheduleRepositoryFacade {
         return mongoTemplate.findOne(query, entityClass);
     }
 
-    private void computeAndSetHash(HashableDocument entity) {
+    public void computeAndSetHash(HashableDocument entity) {
         try {
             String json = objectMapper.writeValueAsString(entity);
             String hash = computeSHA256Hash(json);
@@ -363,165 +364,41 @@ public class ScheduleRepositoryFacade {
         return Base64.getEncoder().encodeToString(hashBytes);
     }
 
-    public ScheduleDocument smartScheduleDaySave(ScheduleDocument schedule, List<ScheduleItem> items) {
-        var weekParity = items.stream()
-                .map(item -> item.isEven())
-                .findFirst();
-        log.info("Successful definition week parity: {}", weekParity);
-
-        Map<DayOfWeek, ScheduleDayDocument> weekForSave = new LinkedHashMap<>();
-
-        if (weekParity.isPresent()){
-            weekForSave = schedule.getOddWeekSchedule();
-        } else {
-            weekForSave = schedule.getEvenWeekSchedule();
-        }
-        log.info("Successful return week for saving: {}", weekForSave);
-
-        var scheduleDay = ScheduleDayDocument.builder()
-                .date(new Date(items.stream()
-                        .map(item -> item.getDate())
-                        .findFirst()
-                        .get()
-                ))
-                .lessons(new LinkedHashMap<>())
-                .build();
-        log.info("Создали день: {}", scheduleDay);
-
-        var savedLessons = convertItemToLessons(items);
-        log.info("Successful conversion items to lessons, {}", savedLessons);
-
-        scheduleDay.setLessons(savedLessons);
-        log.info("Successful save lessons, {}", scheduleDay);
-
-        computeAndSetHash(scheduleDay);
-        log.info("Successful save hash, {}", scheduleDay.getHash());
-
-        scheduleDay = findOrSave(scheduleDay, ScheduleDayDocument.class, scheduleDayRepository);
-        log.info("Successful find or save day, {}", scheduleDay);
-
-        weekForSave.put(
-                DayOfWeek.of(scheduleDay.getDate().getDay() + 1),
-                scheduleDay
-        );
-        log.info("Successful save for a week, {}", weekForSave.get(DayOfWeek.of(scheduleDay.getDate().getDay() + 1)));
-
-        if (schedule.getEvenWeekSchedule().containsValue(scheduleDay)) {
-            schedule.getEvenWeekSchedule().put(DayOfWeek.of(scheduleDay.getDate().getDay() + 1), scheduleDay);
-        } else if (schedule.getOddWeekSchedule().containsValue(scheduleDay)) {
-            schedule.getOddWeekSchedule().put(DayOfWeek.of(scheduleDay.getDate().getDay() + 1), scheduleDay);
-        } else {
-            schedule.getEvenWeekSchedule().put(DayOfWeek.of(scheduleDay.getDate().getDay() + 1), scheduleDay);
-        }
-
-        computeAndSetHash(schedule);
-        log.info("Successful update schedule, {}", schedule);
-
-        return scheduleRepository.save(schedule);
-    }
-
-    public Optional<ScheduleDayDocument> smartScheduleDaySearch(
-            List<ScheduleItem> itemsResponse, ScheduleDocument schedule
-    ) {
-        //Общая подготовка к поиску, вычленение флага недели(odd/even)
-        var weekParity = itemsResponse.stream()
-                .map(ScheduleItem::isEven)
-                .findFirst();
-        Map<DayOfWeek, ScheduleDayDocument> weekForSearch = new LinkedHashMap<>();
-
-        if (weekParity.isPresent()){
-            weekForSearch = schedule.getOddWeekSchedule();
-        } else {
-            weekForSearch = schedule.getEvenWeekSchedule();
-        }
-
-        //Первая итерация поиска, поиск наличия по дню недели
-        var dayOfWeek = Instant.ofEpochMilli(itemsResponse.stream()
-                .map(ScheduleItem::getDate)
-                .findFirst()
-                        .get())
-                .atZone(ZoneId.systemDefault()).plusDays(1).getDayOfWeek();
-        log.info("Day of week from response: {}", dayOfWeek);
-
-        var isDayInWeek = weekForSearch.keySet().stream()
-                .filter(key -> key.equals(dayOfWeek))
-                .findFirst();
-        log.info("Search result day of week in DB, {}", isDayInWeek);
-
-        if (isDayInWeek.isPresent()) {
-            return weekForSearch.entrySet().stream()
-                    .filter(entry -> entry.getKey().equals(dayOfWeek))
-                    .map(Map.Entry::getValue)
-                    .findFirst();
-        }
-        return Optional.empty();
-
-//        //Вторая итерация поиска, поиск по хэшу
-//        var hashDayCollect = weekForSearch.values()
-//                .stream()
-//                .map(day -> Map.entry(day.getHash(), day))
-//                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-//        log.info("Successful create hash day collection, {}", hashDayCollect);
-//
-//        var scheduleDay = ScheduleDayDocument.builder()
-//                .date(new Date(itemsResponse.stream()
-//                        .map(ScheduleItem::getDate)
-//                        .findFirst()
-//                        .get()
-//                ))
-//                .lessons(new LinkedHashMap<>())
-//                .build();
-//
-//        var createdLessons = convertItemToLessons(itemsResponse);
-//        log.info("Successful create lessons, {}", createdLessons);
-//
-//        scheduleDay.setLessons(createdLessons);
-//        log.info("Successful save lessons in search, {}", scheduleDay.getLessons());
-//
-//        computeAndSetHash(scheduleDay);
-//        log.info("Successful save hash for search, {}", scheduleDay.getHash());
-//
-//        return hashDayCollect.entrySet()
-//                .stream()
-//                .filter(entry -> entry.getKey().equals(scheduleDay.getHash()))
-//                .map(Map.Entry::getValue)
-//                .findFirst();
-    }
-
-    private Map<String, List<ScheduleObjectDocument>> convertItemToLessons(List<ScheduleItem> items) {
+    public Map<String, List<ScheduleObjectDocument>> convertItemToLessons(List<ScheduleItem> items) {
         log.info("Items to lessons, {}", items);
-        return items.stream()
-                .map(item -> {
-                    String[] parts = item.getTime().split("-");
-                    TimeSheetDocument timeSheet = TimeSheetDocument.builder()
-                            .from(LocalTime.parse(parts[0].trim()))
-                            .to(LocalTime.parse(parts[1].trim()))
-                            .build();
-                    computeAndSetHash(timeSheet);
-                    timeSheet = findOrSave(timeSheet, TimeSheetDocument.class, timeSheetRepository);
+        Map<String, List<ScheduleObjectDocument>> lessons = new LinkedHashMap<>();
 
-                    var scheduleObjectDocument = ScheduleObjectDocument.builder()
-                            .name(item.getName())
-                            .teacher(item.getTeacher())
-                            .groups(item.getGroups())
-                            .type(ruValueOf(item.getType()))
-                            .place(item.getPlace()).build();
+        items.forEach(item -> {
+            String from = item.getTime()
+                    .split("-")[0];
+            String to = item.getTime()
+                    .split("-")[1];
 
-                    log.info("ScheduleObjectDocument, {}", scheduleObjectDocument);
-                    computeAndSetHash(scheduleObjectDocument);
-                    findOrSave(scheduleObjectDocument, ScheduleObjectDocument.class, scheduleObjectRepository);
+            TimeSheetDocument timeSheetDocument = TimeSheetDocument.builder()
+                    .from(LocalTime.parse(from, DateTimeFormatter.ofPattern("HH:mm")))
+                    .to(LocalTime.parse(to, DateTimeFormatter.ofPattern("HH:mm")))
+                    .build();
 
-                    return new AbstractMap.SimpleEntry<>(timeSheet.getId(), scheduleObjectDocument);
-                })
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> List.of(entry.getValue()),
-                        (oldValue, newValue) -> {
-                            oldValue.addAll(newValue);
-                            return oldValue;
-                        },
-                        LinkedHashMap::new
-                ));
+            ScheduleObjectDocument scheduleObjectDocument = ScheduleObjectDocument.builder()
+                    .name(item.getName())
+                    .teacher(item.getTeacher())
+                    .groups(item.getGroups())
+                    .type(ruValueOf(item.getType()))
+                    .place(item.getPlace())
+                    .build();
+
+            computeAndSetHash(scheduleObjectDocument);
+            computeAndSetHash(timeSheetDocument);
+
+            timeSheetRepository.save(timeSheetDocument);
+            scheduleObjectRepository.save(scheduleObjectDocument);
+
+            lessons
+                    .computeIfAbsent(timeSheetDocument.getId(), v -> new ArrayList<>())
+                    .add(scheduleObjectDocument);
+        });
+
+        return lessons;
     }
 }
 

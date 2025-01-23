@@ -2,7 +2,6 @@ package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
 import com.techstud.scheduleuniversity.dao.entity.Student;
 import com.techstud.scheduleuniversity.dao.entity.UniversityGroup;
 import com.techstud.scheduleuniversity.dto.ImportDto;
@@ -15,20 +14,21 @@ import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
 import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
+import com.techstud.scheduleuniversity.mapper.ScheduleObjectMapper;
 import com.techstud.scheduleuniversity.repository.jpa.StudentRepository;
 import com.techstud.scheduleuniversity.repository.jpa.UniversityGroupRepository;
 import com.techstud.scheduleuniversity.repository.mongo.ScheduleDayRepository;
 import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepository;
 import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepositoryFacade;
+import com.techstud.scheduleuniversity.repository.mongo.TimeSheetRepository;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
+import java.time.*;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +42,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final KafkaMessageObserver messageObserver;
     private final StudentRepository studentRepository;
     private final ScheduleDayRepository scheduleDayRepository;
+    private final TimeSheetRepository timeSheetRepository;
 
     @Override
     @Transactional
@@ -259,5 +260,76 @@ public class ScheduleServiceImpl implements ScheduleService {
             log.error("Error while waiting for parser response", e);
         }
         return savedSchedule;
+    }
+
+    @Override
+    @Transactional
+    public ScheduleDocument saveLessons(ScheduleItem item, String userName) throws StudentNotFoundException, ScheduleNotFoundException {
+        Student student = studentRepository.findByUsername(userName)
+                .orElseThrow(() -> new StudentNotFoundException("Not found student by username, %s ".formatted(userName)));
+
+        ScheduleDocument schedule = scheduleRepository.findById(student.getScheduleMongoId())
+                .orElseThrow(() -> new ScheduleNotFoundException("Schedule by id, %s, not found".formatted(student.getScheduleMongoId())));
+
+        var isEvenWeek = item.isEven();
+
+        var dayOfWeek = Instant
+                .ofEpochMilli(item.getDate())
+                .atZone(ZoneId.systemDefault())
+                .plusDays(1)
+                .getDayOfWeek();
+
+        Map<DayOfWeek, ScheduleDayDocument> week;
+
+        if (isEvenWeek) {
+            week = schedule.getEvenWeekSchedule();
+        } else {
+            week = schedule.getOddWeekSchedule();
+        }
+
+        var scheduleDay = week.entrySet().stream()
+                .filter(key -> key.getKey().equals(dayOfWeek))
+                .map(Map.Entry::getValue)
+                .findFirst().orElseThrow(() -> new IllegalStateException("Schedule day not found"));
+
+        var foundedTimeSheet = scheduleDay.getLessons().keySet().stream()
+                .map(key -> timeSheetRepository.findById(key).get())
+                .toList();
+
+        var isLessonsInDay = foundedTimeSheet
+                .stream()
+                .anyMatch(timeSheetDocument -> {
+                    var timeInfo = item.getTime();
+                    var from = LocalTime.parse(timeInfo.split("-")[0]);
+                    var to = LocalTime.parse(timeInfo.split("-")[1]);
+                    return timeSheetDocument.getTo().equals(to) && timeSheetDocument.getFrom().equals(from);
+                });
+
+        if(!isLessonsInDay){
+            var lessons = scheduleRepositoryFacade.convertItemToLessons(List.of(item));
+
+            lessons.forEach((day, newLessons) ->
+                    scheduleDay.getLessons()
+                            .merge(day, new ArrayList<>(newLessons),
+                            (existingLessons, lessonsToAdd) -> {
+                                existingLessons.addAll(lessonsToAdd);
+                                return existingLessons;
+                            }));
+
+            scheduleRepositoryFacade.computeAndSetHash(scheduleDay);
+            scheduleDayRepository.save(scheduleDay);
+            log.info("Successful save day with lessons, {}", scheduleDay);
+
+            if(isEvenWeek){
+                schedule.getEvenWeekSchedule().put(dayOfWeek, scheduleDay);
+            } else {
+                schedule.getOddWeekSchedule().put(dayOfWeek, scheduleDay);
+            }
+        } else {
+            throw new IllegalStateException("Time sheet object, %s, already exists in day: ".formatted(dayOfWeek));
+        }
+
+        scheduleRepositoryFacade.computeAndSetHash(schedule);
+        return scheduleRepository.save(schedule);
     }
 }

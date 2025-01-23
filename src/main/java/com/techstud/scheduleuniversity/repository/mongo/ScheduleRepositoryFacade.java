@@ -29,8 +29,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.BiConsumer;
+
+import static com.techstud.scheduleuniversity.dto.ScheduleType.ruValueOf;
 
 @Component
 @Slf4j
@@ -250,6 +253,54 @@ public class ScheduleRepositoryFacade {
         return scheduleRepository.save(scheduleDocument);
     }
 
+    public void computeAndSetHash(HashableDocument entity) {
+        try {
+            String json = objectMapper.writeValueAsString(entity);
+            String hash = computeSHA256Hash(json);
+            entity.setHash(hash);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to compute hash ", e);
+        }
+    }
+
+    public Map<String, List<ScheduleObjectDocument>> convertItemToLessons(List<ScheduleItem> items) {
+        log.info("Items to lessons, {}", items);
+        Map<String, List<ScheduleObjectDocument>> lessons = new LinkedHashMap<>();
+
+        items.forEach(item -> {
+            String from = item.getTime()
+                    .split("-")[0];
+            String to = item.getTime()
+                    .split("-")[1];
+
+            TimeSheetDocument timeSheetDocument = TimeSheetDocument.builder()
+                    .from(LocalTime.parse(from, DateTimeFormatter.ofPattern("HH:mm")))
+                    .to(LocalTime.parse(to, DateTimeFormatter.ofPattern("HH:mm")))
+                    .build();
+            log.info("Time sheet: {}", timeSheetDocument);
+
+            ScheduleObjectDocument scheduleObjectDocument = ScheduleObjectDocument.builder()
+                    .name(item.getName())
+                    .teacher(item.getTeacher())
+                    .groups(item.getGroups())
+                    .type(ruValueOf(item.getType()))
+                    .place(item.getPlace())
+                    .build();
+            log.info("Schedule object: {}", scheduleObjectDocument);
+
+            computeAndSetHash(scheduleObjectDocument);
+            computeAndSetHash(timeSheetDocument);
+
+            timeSheetDocument = findOrSave(timeSheetDocument, TimeSheetDocument.class, timeSheetRepository);
+            scheduleObjectRepository.save(scheduleObjectDocument);
+
+            lessons
+                    .computeIfAbsent(timeSheetDocument.getId(), v -> new ArrayList<>())
+                    .add(scheduleObjectDocument);
+        });
+
+        return lessons;
+    }
 
     private boolean isTimeMatching(String timeRange, TimeSheetDocument timeSheetDocument) {
 
@@ -349,11 +400,7 @@ public class ScheduleRepositoryFacade {
         return mongoTemplate.findOne(query, entityClass);
     }
 
-    private void computeAndSetHash(HashableDocument entity) throws Exception {
-        String json = objectMapper.writeValueAsString(entity);
-        String hash = computeSHA256Hash(json);
-        entity.setHash(hash);
-    }
+
 
     private String computeSHA256Hash(String input) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -361,3 +408,6 @@ public class ScheduleRepositoryFacade {
         return Base64.getEncoder().encodeToString(hashBytes);
     }
 }
+
+
+

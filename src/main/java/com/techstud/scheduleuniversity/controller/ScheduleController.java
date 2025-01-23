@@ -412,11 +412,11 @@ public class ScheduleController {
     @PostMapping("/scheduleDay/lesson/save")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> saveLesson(
-            @RequestBody ApiRequest<List<ScheduleItem>> saveLessonsObject,
+            @RequestBody ApiRequest<ScheduleItem> saveLessonObject,
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
-        log.info("Successful request to create schedule day, scheduleDay: {}, user: {}", saveLessonsObject, principal.getName());
+        log.info("Successful request to create schedule day, scheduleDay: {}, user: {}", saveLessonObject, principal.getName());
         return ResponseEntity.ok(scheduleMapper.toResponse(scheduleService.saveLessons(
-                saveLessonsObject.getData(),
+                saveLessonObject.getData(),
                 principal.getName()
         )));
     }

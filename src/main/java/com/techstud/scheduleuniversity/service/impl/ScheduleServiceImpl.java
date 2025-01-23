@@ -14,6 +14,7 @@ import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
 import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
+import com.techstud.scheduleuniversity.mapper.ScheduleObjectMapper;
 import com.techstud.scheduleuniversity.repository.jpa.StudentRepository;
 import com.techstud.scheduleuniversity.repository.jpa.UniversityGroupRepository;
 import com.techstud.scheduleuniversity.repository.mongo.ScheduleDayRepository;
@@ -263,24 +264,24 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Transactional
-    public ScheduleDocument saveLessons(List<ScheduleItem> items, String userName) throws StudentNotFoundException, ScheduleNotFoundException {
+    public ScheduleDocument saveLessons(ScheduleItem item, String userName) throws StudentNotFoundException, ScheduleNotFoundException {
         Student student = studentRepository.findByUsername(userName)
                 .orElseThrow(() -> new StudentNotFoundException("Not found student by username, %s ".formatted(userName)));
 
         ScheduleDocument schedule = scheduleRepository.findById(student.getScheduleMongoId())
                 .orElseThrow(() -> new ScheduleNotFoundException("Schedule by id, %s, not found".formatted(student.getScheduleMongoId())));
 
-        var isEvenWeek = items.stream().map(ScheduleItem::isEven).findFirst();
+        var isEvenWeek = item.isEven();
 
-        var dayOfWeek = Instant.ofEpochMilli(items.stream()
-                        .map(ScheduleItem::getDate)
-                        .findFirst()
-                        .get())
-                .atZone(ZoneId.systemDefault()).getDayOfWeek();
+        var dayOfWeek = Instant
+                .ofEpochMilli(item.getDate())
+                .atZone(ZoneId.systemDefault())
+                .plusDays(1)
+                .getDayOfWeek();
 
         Map<DayOfWeek, ScheduleDayDocument> week;
 
-        if (isEvenWeek.isPresent()) {
+        if (isEvenWeek) {
             week = schedule.getEvenWeekSchedule();
         } else {
             week = schedule.getOddWeekSchedule();
@@ -295,21 +296,17 @@ public class ScheduleServiceImpl implements ScheduleService {
                 .map(key -> timeSheetRepository.findById(key).get())
                 .toList();
 
-        var isLessonsInDay = items
+        var isLessonsInDay = foundedTimeSheet
                 .stream()
-                .anyMatch(item -> {
+                .anyMatch(timeSheetDocument -> {
                     var timeInfo = item.getTime();
                     var from = LocalTime.parse(timeInfo.split("-")[0]);
                     var to = LocalTime.parse(timeInfo.split("-")[1]);
-                    return foundedTimeSheet.stream()
-                            .anyMatch(timeSheetDocument ->
-                                    timeSheetDocument.getTo().equals(to) &&
-                                            timeSheetDocument.getFrom().equals(from)
-                            );
+                    return timeSheetDocument.getTo().equals(to) && timeSheetDocument.getFrom().equals(from);
                 });
 
         if(!isLessonsInDay){
-            var lessons = scheduleRepositoryFacade.convertItemToLessons(items);
+            var lessons = scheduleRepositoryFacade.convertItemToLessons(List.of(item));
 
             lessons.forEach((day, newLessons) ->
                     scheduleDay.getLessons()
@@ -323,7 +320,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             scheduleDayRepository.save(scheduleDay);
             log.info("Successful save day with lessons, {}", scheduleDay);
 
-            if(isEvenWeek.isPresent()){
+            if(isEvenWeek){
                 schedule.getEvenWeekSchedule().put(dayOfWeek, scheduleDay);
             } else {
                 schedule.getOddWeekSchedule().put(dayOfWeek, scheduleDay);

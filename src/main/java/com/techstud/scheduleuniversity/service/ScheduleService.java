@@ -42,7 +42,7 @@ public interface ScheduleService {
     ScheduleDocument updateScheduleDay(String dayId, List<ScheduleItem> scheduleItems, String username)
             throws ScheduleNotFoundException, StudentNotFoundException;
 
-    ScheduleDocument saveLessons(List<ScheduleItem> items, String userName)
+    ScheduleDocument saveLessons(ScheduleItem item, String userName)
             throws StudentNotFoundException, ScheduleNotFoundException;
 
 }

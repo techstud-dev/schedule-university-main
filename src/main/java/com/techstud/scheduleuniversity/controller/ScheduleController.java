@@ -390,11 +390,35 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleMapper.toResponse(scheduleDocument, scheduleDayId, timeWindowId));
     }
 
-    @PostMapping("/scheduleDay/lesson/")
+    @Operation(
+            summary = "Запрос на сохранение новых уроков для дня",
+            description = "Сохраняет уроки в БД используя входящие данные и пользователя",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное сохранение уроков",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Не авторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
+    @PostMapping("/scheduleDay/lesson/save")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public EntityModel<List<ScheduleItem>> saveLesson(@RequestBody ApiRequest<Object> saveObject,
-                                                                   @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> saveLesson(
+            @RequestBody ApiRequest<List<ScheduleItem>> saveLessonsObject,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+        log.info("Successful request to create schedule day, scheduleDay: {}, user: {}", saveLessonsObject, principal.getName());
+        return ResponseEntity.ok(scheduleMapper.toResponse(scheduleService.saveLessons(
+                saveLessonsObject.getData(),
+                principal.getName()
+        )));
     }
 
     @Operation(

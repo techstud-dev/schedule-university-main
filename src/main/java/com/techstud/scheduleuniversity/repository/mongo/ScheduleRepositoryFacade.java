@@ -29,8 +29,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.BiConsumer;
+
+import static com.techstud.scheduleuniversity.dto.ScheduleType.ruValueOf;
 
 @Component
 @Slf4j
@@ -349,10 +352,14 @@ public class ScheduleRepositoryFacade {
         return mongoTemplate.findOne(query, entityClass);
     }
 
-    private void computeAndSetHash(HashableDocument entity) throws Exception {
-        String json = objectMapper.writeValueAsString(entity);
-        String hash = computeSHA256Hash(json);
-        entity.setHash(hash);
+    public void computeAndSetHash(HashableDocument entity) {
+        try {
+            String json = objectMapper.writeValueAsString(entity);
+            String hash = computeSHA256Hash(json);
+            entity.setHash(hash);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to compute hash ", e);
+        }
     }
 
     private String computeSHA256Hash(String input) throws Exception {
@@ -360,4 +367,42 @@ public class ScheduleRepositoryFacade {
         byte[] hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
         return Base64.getEncoder().encodeToString(hashBytes);
     }
+
+    public Map<String, List<ScheduleObjectDocument>> convertItemToLessons(List<ScheduleItem> items) {
+        log.info("Items to lessons, {}", items);
+        Map<String, List<ScheduleObjectDocument>> lessons = new LinkedHashMap<>();
+
+        items.forEach(item -> {
+            String from = item.getTime()
+                    .split("-")[0];
+            String to = item.getTime()
+                    .split("-")[1];
+
+            TimeSheetDocument timeSheetDocument = TimeSheetDocument.builder()
+                    .from(LocalTime.parse(from, DateTimeFormatter.ofPattern("HH:mm")))
+                    .to(LocalTime.parse(to, DateTimeFormatter.ofPattern("HH:mm")))
+                    .build();
+
+            ScheduleObjectDocument scheduleObjectDocument = ScheduleObjectDocument.builder()
+                    .name(item.getName())
+                    .teacher(item.getTeacher())
+                    .groups(item.getGroups())
+                    .type(ruValueOf(item.getType()))
+                    .place(item.getPlace())
+                    .build();
+
+            computeAndSetHash(scheduleObjectDocument);
+            computeAndSetHash(timeSheetDocument);
+
+            timeSheetRepository.save(timeSheetDocument);
+            scheduleObjectRepository.save(scheduleObjectDocument);
+
+            lessons
+                    .computeIfAbsent(timeSheetDocument.getId(), v -> new ArrayList<>())
+                    .add(scheduleObjectDocument);
+        });
+
+        return lessons;
+    }
 }
+

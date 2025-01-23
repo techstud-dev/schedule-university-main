@@ -3,10 +3,7 @@ package com.techstud.scheduleuniversity.dao.document.schedule;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.techstud.scheduleuniversity.dao.HashableDocument;
 import com.techstud.scheduleuniversity.dto.ScheduleType;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -20,6 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @Document(collection = "schedule_object")
 @EqualsAndHashCode(of = {"type", "name", "teacher", "place", "groups"})
+@Builder
 public class ScheduleObjectDocument implements Serializable, HashableDocument {
 
     @Id

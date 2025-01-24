@@ -1259,4 +1259,20 @@ public class Examples {
                 }
             }
             """;
+
+    public static final String LESSON_IS_EXIST = """
+            {
+                "systemName": "schedule-university-main",\s
+                "applicationName": "tchs",\s
+                "error": "Lesson already exists in this timeslot for day: Понедельник, time: 15:40 - 17:15"
+            }
+            """;
+
+    public static final String DAY_IS_EXIST = """
+            {
+                "systemName": "schedule-university-main"\s,
+                "applicationName": "tchs"\s,
+                "error": "Schedule day MONDAY already exists in odd week for schedule 6793859160e3e76d20eecee7"
+            }
+            """;
 }

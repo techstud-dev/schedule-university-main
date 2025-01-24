@@ -287,6 +287,32 @@ public class ScheduleController {
         return ResponseEntity.ok().body(scheduleDocument);
     }
 
+    @Operation(
+            summary = "Запрос на создание дня расписания",
+            description = "Создает день расписания у пользователя в расписании.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное создание дня расписания",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "День уже существует в расписании этой недели",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
     @PostMapping("/scheduleDay/")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> createScheduleDay(
@@ -394,6 +420,34 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleItems);
     }
 
+    @Operation(
+            summary = "Запрос на урока в дне расписания",
+            description = "Создает урок на определенный день, определенное время.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное создание урока",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Урок на этот день и это время уже существует",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.LESSON_IS_EXIST)
+                            )
+                    )}
+    )
     @PostMapping("/scheduleDay/lesson/")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> saveLesson(

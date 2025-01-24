@@ -156,12 +156,12 @@ public class ScheduleMapper {
     }
 
     public ScheduleDayDocument toScheduleDayDocument(List<ScheduleItem> scheduleItems) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("hh:mm");
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm");
         ScheduleDayDocument resultScheduleDayDocument = new ScheduleDayDocument();
         Map<String, List<ScheduleObjectDocument>> resultLessonMap = new LinkedHashMap<>();
         for (ScheduleItem scheduleItem : scheduleItems) {
-            String requestFrom = scheduleItem.getTime().split("-")[0];
-            String requestTo = scheduleItem.getTime().split("-")[1];
+            String requestFrom = scheduleItem.getTime().split("-")[0].trim();
+            String requestTo = scheduleItem.getTime().split("-")[1].trim();
             TimeSheetDocument currentTimeSheet = timeSheetRepository
                     .findByFromAndTo(LocalTime.parse(requestFrom, dateTimeFormatter), LocalTime.parse(requestTo, dateTimeFormatter))
                     .orElse(scheduleRepositoryFacade.smartTimeSheetSave(new TimeSheetDocument(requestFrom, requestTo)));
@@ -185,7 +185,7 @@ public class ScheduleMapper {
             resultScheduleDayDocument.setLessons(resultLessonMap);
             resultScheduleDayDocument.setDate(Date.from(Instant.ofEpochSecond(scheduleItem.getDate())));
 
-            return scheduleRepositoryFacade.cascadeScheduleDaySave(resultScheduleDayDocument);
+            return scheduleRepositoryFacade.cascadeSave(resultScheduleDayDocument);
         }
 
         return resultScheduleDayDocument;
@@ -202,7 +202,7 @@ public class ScheduleMapper {
         doc.setPlace(item.getPlace());
         doc.setGroups(item.getGroups() != null ? item.getGroups() : new ArrayList<>());
 
-        doc = scheduleRepositoryFacade.cascadeLessonSave(doc);
+        doc = scheduleRepositoryFacade.cascadeSave(doc);
         return doc;
     }
 

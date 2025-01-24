@@ -30,8 +30,8 @@ public class TimeSheetDocument implements Serializable, HashableDocument {
     private String hash;
 
     public TimeSheetDocument(String from, String to) {
-        this.from = LocalTime.parse(from, DateTimeFormatter.ofPattern("hh:mm"));
-        this.to= LocalTime.parse(to, DateTimeFormatter.ofPattern("hh:mm"));
+        this.from = LocalTime.parse(from, DateTimeFormatter.ofPattern("HH:mm"));
+        this.to= LocalTime.parse(to, DateTimeFormatter.ofPattern("HH:mm"));
     }
     @Override
     public String toString() {

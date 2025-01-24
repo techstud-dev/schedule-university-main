@@ -19,6 +19,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -41,6 +42,18 @@ public class ScheduleMapper {
     );
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+
+    public DayOfWeek getDayOfWeekByRuName(String ruName) {
+        AtomicReference<DayOfWeek> foundDayOfWeek = new AtomicReference<>();
+
+        RU_DAYS_OF_WEEK.forEach((dayOfWeek, ruNameValue) -> {
+            if (ruNameValue.equalsIgnoreCase(ruName)) {
+                foundDayOfWeek.set(dayOfWeek);
+            }
+        });
+
+        return foundDayOfWeek.get();
+    }
 
     @SneakyThrows
     public CollectionModel<EntityModel<ScheduleItem>> toResponse(ScheduleDocument documentSchedule,
@@ -98,7 +111,6 @@ public class ScheduleMapper {
     }
 
 
-
     @SneakyThrows
     public EntityModel<ScheduleApiResponse> toResponse(ScheduleDocument documentSchedule) {
         ScheduleApiResponse response = new ScheduleApiResponse();
@@ -121,18 +133,18 @@ public class ScheduleMapper {
                         .withRel("deleteSchedule")
                         .withType("DELETE"),
                 linkTo(
-                        methodOn(ScheduleController.class).importSchedule(null,null))
+                        methodOn(ScheduleController.class).importSchedule(null, null))
                         .withRel("importSchedule")
                         .withType("POST"),
                 linkTo(
-                        methodOn(ScheduleController.class).forceImportSchedule(null,null))
+                        methodOn(ScheduleController.class).forceImportSchedule(null, null))
                         .withRel("forceImportSchedule")
                         .withType("POST"),
                 linkTo(
                         methodOn(ScheduleController.class).createSchedule(null, null))
                         .withRel("createSchedule")
                         .withType("POST")
-                );
+        );
     }
 
 
@@ -193,14 +205,14 @@ public class ScheduleMapper {
                                         .withRel("deleteScheduleDay")
                                         .withType("DELETE")
                         );
-                    } catch (ScheduleNotFoundException | StudentNotFoundException ignored) {}
+                    } catch (ScheduleNotFoundException | StudentNotFoundException ignored) {
+                    }
                     response.add(scheduleItemEntity);
                 });
             });
         });
         return response;
     }
-
 
 
     private long mapDate(Date date, DayOfWeek dayOfWeek) {

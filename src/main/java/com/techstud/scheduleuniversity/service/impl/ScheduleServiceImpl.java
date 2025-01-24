@@ -376,7 +376,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         // Если не найден — создаём новый, сохраняем в БД
         if (timeSheetDocument == null) {
             timeSheetDocument = new TimeSheetDocument();
-            // Устанавливаем нужные поля (from, to, возможно, description и т.д.)
+            // Устанавливаем нужные поля (from, to)
             timeSheetDocument.setFrom(from);
             timeSheetDocument.setTo(to);
 

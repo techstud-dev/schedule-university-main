@@ -36,7 +36,7 @@ public class TokenServiceImpl implements TokenService {
                 .issuer(issuer)
                 .claim("type", "jwt")
                 .issuedAt(Date.from(Instant.now()))
-                .expiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
+                .expiration(Date.from(Instant.now().plus(2, ChronoUnit.MINUTES)))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }

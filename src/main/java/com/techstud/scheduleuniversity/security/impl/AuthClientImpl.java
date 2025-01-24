@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.Header;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -30,10 +31,10 @@ public class AuthClientImpl implements AuthClient {
         String jwtToken = jwtGenerateService.generateServiceToken();
         String validateUrl = baseUrl + "/service/auth/validate-service";
 
-        HttpPost httpPost = new HttpPost(validateUrl);
-        httpPost.setHeader("Authorization", "Bearer " + jwtToken);
-
         executeWithRetry(() -> {
+            HttpPost httpPost = new HttpPost(validateUrl);
+            httpPost.setHeader("Authorization", "Bearer " + jwtToken);
+
             try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
                 handleHttpAuthResponse(response);
             } catch (IOException e) {
@@ -46,7 +47,7 @@ public class AuthClientImpl implements AuthClient {
     @Override
     public void refreshTokens() {
         String currentRefreshToken = String.valueOf(tokenManager.getRefreshToken());
-        String refreshUrl = baseUrl + "/service/auth/refresh-service";
+        String refreshUrl = baseUrl + "/service/auth/refresh-token";
 
         if (currentRefreshToken == null || currentRefreshToken.isEmpty()) {
             log.warn("Refresh token is null or empty. Re-authenticating...");
@@ -54,10 +55,10 @@ public class AuthClientImpl implements AuthClient {
             return;
         }
 
-        HttpPost httpPost = new HttpPost(refreshUrl);
-        httpPost.setHeader("Authorization", "Bearer " + currentRefreshToken);
-
         executeWithRetry(() -> {
+            HttpPost httpPost = new HttpPost(refreshUrl);
+            httpPost.setHeader("Authorization", "Bearer " + currentRefreshToken);
+
             try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
                 handleHttpRefreshResponse(response);
             } catch (IOException e) {
@@ -71,8 +72,16 @@ public class AuthClientImpl implements AuthClient {
         int statusCode = response.getCode();
 
         if (statusCode == 200) {
-            String accessToken = response.getFirstHeader("AccessToken").getValue();
-            String refreshToken = response.getFirstHeader("Refresh-Token").getValue();
+            Header accessTokenHeader = response.getFirstHeader("Access-Token");
+            Header refreshTokenHeader = response.getFirstHeader("Refresh-Token");
+
+            if (accessTokenHeader == null || refreshTokenHeader == null) {
+                throw new RuntimeException("Missing required headers in response");
+            }
+
+            String accessToken = accessTokenHeader.getValue();
+            String refreshToken = refreshTokenHeader.getValue();
+
             tokenManager.updateTokens(accessToken, refreshToken);
             log.info("Service authenticated successfully.");
         }else {
@@ -84,7 +93,14 @@ public class AuthClientImpl implements AuthClient {
         int statusCode = response.getCode();
 
         if (statusCode == 200) {
-            String accessToken = response.getFirstHeader("Access-Token").getValue();
+            Header accessTokenHeader = response.getFirstHeader("Access-Token");
+
+            if (accessTokenHeader == null) {
+                throw new RuntimeException("Missing required headers in response");
+            }
+
+            String accessToken = accessTokenHeader.getValue();
+
             tokenManager.updateAccessToken(accessToken);
             log.info("Access token refreshed successfully.");
         } else {

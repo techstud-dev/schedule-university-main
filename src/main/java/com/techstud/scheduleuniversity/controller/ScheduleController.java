@@ -311,7 +311,7 @@ public class ScheduleController {
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = Map.class),
-                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+                                    examples = @ExampleObject(value = Examples.DAY_IS_EXIST))),}
     )
     @PostMapping("/scheduleDay/")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")

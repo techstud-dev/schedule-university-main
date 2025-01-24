@@ -21,13 +21,13 @@ public class TokenScheduler {
         authClient.authenticateService();
     }
 
-    @Scheduled(fixedRateString = "PT1M")
+    @Scheduled(fixedRateString = "PT14M")
     public void refreshAccessToken() {
         log.info("Refreshing access token at {}", Instant.now());
         authClient.refreshTokens();
     }
 
-    @Scheduled(fixedRateString = "PT2M")
+    @Scheduled(fixedRateString = "PT1H59M")
     public void refreshRefreshToken() {
         log.info("Re-authenticating service at {}", Instant.now());
         authClient.authenticateService();

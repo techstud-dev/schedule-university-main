@@ -91,6 +91,15 @@ public class ScheduleRepositoryFacade {
             throw new RuntimeException("Error cascade save", e);
         }
     }
+    public ScheduleObjectDocument cascadeLessonSave(ScheduleObjectDocument scheduleObjectDocument) {
+        try {
+            computeAndSetHash(scheduleObjectDocument);
+            return findOrSave(scheduleObjectDocument, ScheduleObjectDocument.class, scheduleObjectRepository);
+        } catch (Exception e) {
+            throw new RuntimeException("Error cascade save schedule object", e);
+        }
+    }
+
 
 
     public ScheduleDocument smartScheduleDayDelete(ScheduleDocument scheduleDocument, ScheduleDayDocument scheduleDayDocument) {

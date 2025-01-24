@@ -190,6 +190,22 @@ public class ScheduleMapper {
 
         return resultScheduleDayDocument;
     }
+    public ScheduleObjectDocument mapToScheduleObjectDocument(ScheduleItem item) {
+        ScheduleType resolvedType;
+        resolvedType = ScheduleType.ruValueOf(item.getType().toUpperCase());
+
+
+        ScheduleObjectDocument doc = new ScheduleObjectDocument();
+        doc.setType(resolvedType);
+        doc.setName(item.getName());
+        doc.setTeacher(item.getTeacher());
+        doc.setPlace(item.getPlace());
+        doc.setGroups(item.getGroups() != null ? item.getGroups() : new ArrayList<>());
+
+        doc = scheduleRepositoryFacade.cascadeLessonSave(doc);
+        return doc;
+    }
+
 
 
     private List<EntityModel<ScheduleItem>> mapWeek(Map<DayOfWeek, ScheduleDayDocument> documentWeek, boolean isEven) {

@@ -109,15 +109,15 @@ public class AuthClientImpl implements AuthClient {
     }
 
     private void executeWithRetry(Runnable action) {
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 7; i++) {
             try {
                 action.run();
                 return;
             } catch (Exception e) {
                 log.warn("Attempt {} failed: {}", i + 1, e.getMessage());
-                if (i < 3 - 1) {
+                if (i < 7 - 1) {
                     try {
-                        Thread.sleep(2000);
+                        Thread.sleep(5000);
                     } catch (InterruptedException ignored) {
                     }
                 }

@@ -15,6 +15,7 @@ import com.techstud.scheduleuniversity.dto.parser.response.ScheduleObjectParserR
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.parser.response.TimeSheetParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
+import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
 import com.techstud.scheduleuniversity.mapper.ScheduleObjectMapper;
 import com.techstud.scheduleuniversity.mapper.TimeSheetMapper;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +64,34 @@ public class ScheduleRepositoryFacade {
             throw new RuntimeException("Error cascade save schedule", e);
         }
     }
+
+    public TimeSheetDocument smartTimeSheetSave(TimeSheetDocument timeSheetDocument) {
+        try {
+            computeAndSetHash(timeSheetDocument);
+            return findOrSave(timeSheetDocument, TimeSheetDocument.class, timeSheetRepository);
+        } catch (Exception e) {
+            throw  new RuntimeException("Error smart TimeSheet save", e);
+        }
+    }
+
+    public ScheduleDocument cascadeSave(ScheduleDocument scheduleDocument) {
+        try {
+            computeAndSetHash(scheduleDocument);
+            return findOrSave(scheduleDocument, ScheduleDocument.class, scheduleRepository);
+        } catch (Exception e) {
+            throw new RuntimeException("Error cascade save schedule", e);
+        }
+    }
+
+    public ScheduleDayDocument cascadeScheduleDaySave(ScheduleDayDocument scheduleDayDocument) {
+        try {
+            computeAndSetHash(scheduleDayDocument);
+            return findOrSave(scheduleDayDocument, ScheduleDayDocument.class, scheduleDayRepository);
+        } catch (Exception e) {
+            throw new RuntimeException("Error cascade save", e);
+        }
+    }
+
 
     public ScheduleDocument smartScheduleDayDelete(ScheduleDocument scheduleDocument, ScheduleDayDocument scheduleDayDocument) {
         try {

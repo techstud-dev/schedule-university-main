@@ -3,10 +3,15 @@ package com.techstud.scheduleuniversity.mapper;
 import com.techstud.scheduleuniversity.controller.ScheduleController;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
 import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheetDocument;
+import com.techstud.scheduleuniversity.dto.ScheduleType;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
+import com.techstud.scheduleuniversity.exception.ResourceExistsException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
+import com.techstud.scheduleuniversity.repository.mongo.ScheduleRepositoryFacade;
 import com.techstud.scheduleuniversity.repository.mongo.TimeSheetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -16,7 +21,9 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,6 +37,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class ScheduleMapper {
 
     private final TimeSheetRepository timeSheetRepository;
+    private final ScheduleRepositoryFacade scheduleRepositoryFacade;
 
     private static final Map<DayOfWeek, String> RU_DAYS_OF_WEEK = Map.of(
             DayOfWeek.MONDAY, "Понедельник",
@@ -147,6 +155,42 @@ public class ScheduleMapper {
         );
     }
 
+    public ScheduleDayDocument toScheduleDayDocument(List<ScheduleItem> scheduleItems) {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("hh:mm");
+        ScheduleDayDocument resultScheduleDayDocument = new ScheduleDayDocument();
+        Map<String, List<ScheduleObjectDocument>> resultLessonMap = new LinkedHashMap<>();
+        for (ScheduleItem scheduleItem : scheduleItems) {
+            String requestFrom = scheduleItem.getTime().split("-")[0];
+            String requestTo = scheduleItem.getTime().split("-")[1];
+            TimeSheetDocument currentTimeSheet = timeSheetRepository
+                    .findByFromAndTo(LocalTime.parse(requestFrom, dateTimeFormatter), LocalTime.parse(requestTo, dateTimeFormatter))
+                    .orElse(scheduleRepositoryFacade.smartTimeSheetSave(new TimeSheetDocument(requestFrom, requestTo)));
+            ScheduleObjectDocument scheduleObjectDocument = new ScheduleObjectDocument();
+            scheduleObjectDocument.setGroups(scheduleItem.getGroups());
+            scheduleObjectDocument.setTeacher(scheduleItem.getTeacher());
+            scheduleObjectDocument.setType(ScheduleType.ruValueOf(scheduleItem.getType()));
+            scheduleObjectDocument.setPlace(scheduleItem.getPlace());
+            scheduleObjectDocument.setName(scheduleItem.getPlace());
+
+            if (resultLessonMap.containsKey(currentTimeSheet.getId())) {
+                List<ScheduleObjectDocument> existingLessonsInTimeSheet = resultLessonMap.get(currentTimeSheet.getId());
+                existingLessonsInTimeSheet.add(scheduleObjectDocument);
+                resultLessonMap.put(currentTimeSheet.getId(), existingLessonsInTimeSheet);
+            } else {
+                List<ScheduleObjectDocument> currnetScheduleObjectDocumentList = new ArrayList<>();
+                currnetScheduleObjectDocumentList.add(scheduleObjectDocument);
+                resultLessonMap.put(currentTimeSheet.getId(), currnetScheduleObjectDocumentList);
+            }
+
+            resultScheduleDayDocument.setLessons(resultLessonMap);
+            resultScheduleDayDocument.setDate(Date.from(Instant.ofEpochSecond(scheduleItem.getDate())));
+
+            return scheduleRepositoryFacade.cascadeScheduleDaySave(resultScheduleDayDocument);
+        }
+
+        return resultScheduleDayDocument;
+    }
+
 
     private List<EntityModel<ScheduleItem>> mapWeek(Map<DayOfWeek, ScheduleDayDocument> documentWeek, boolean isEven) {
         List<EntityModel<ScheduleItem>> response = new ArrayList<>();
@@ -205,7 +249,8 @@ public class ScheduleMapper {
                                         .withRel("deleteScheduleDay")
                                         .withType("DELETE")
                         );
-                    } catch (ScheduleNotFoundException | StudentNotFoundException ignored) {
+                    } catch (ScheduleNotFoundException | StudentNotFoundException |
+                             ResourceExistsException ignored) {
                     }
                     response.add(scheduleItemEntity);
                 });

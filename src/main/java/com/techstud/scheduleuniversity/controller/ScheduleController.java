@@ -6,10 +6,7 @@ import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
-import com.techstud.scheduleuniversity.exception.ParserException;
-import com.techstud.scheduleuniversity.exception.RequestException;
-import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
-import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
+import com.techstud.scheduleuniversity.exception.*;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import com.techstud.scheduleuniversity.swagger.ApiRequestImportDto;
 import com.techstud.scheduleuniversity.swagger.ApiRequestSaveDto;
@@ -284,10 +281,11 @@ public class ScheduleController {
 
     @PostMapping("/scheduleDay/")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<EntityModel<ScheduleApiResponse>> createScheduleDay(@RequestBody ApiRequest<List<ScheduleItem>> saveObject,
-                                                                              @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> createScheduleDay(
+            @RequestBody ApiRequest<List<ScheduleItem>> saveObject,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException, ResourceExistsException {
         log.info("Incoming request to save schedule day by user: {}", principal.getName());
-        EntityModel<ScheduleApiResponse> createdSchedule = scheduleService.createScheduleDay(saveObject.getData());
+        EntityModel<ScheduleApiResponse> createdSchedule = scheduleService.createScheduleDay(saveObject.getData(), principal.getName());
         return ResponseEntity.ok().body(createdSchedule);
     }
 

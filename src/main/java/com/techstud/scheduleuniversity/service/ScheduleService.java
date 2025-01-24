@@ -5,6 +5,7 @@ import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserRespons
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
 import com.techstud.scheduleuniversity.exception.ParserException;
+import com.techstud.scheduleuniversity.exception.ResourceExistsException;
 import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
 import org.springframework.hateoas.CollectionModel;
@@ -46,8 +47,8 @@ public interface ScheduleService {
     EntityModel<ScheduleApiResponse> updateScheduleDay(String dayId, List<ScheduleItem> scheduleItems, String username)
             throws ScheduleNotFoundException, StudentNotFoundException;
 
-    EntityModel<ScheduleApiResponse> createScheduleDay(List<ScheduleItem> scheduleItems)
-            throws ScheduleNotFoundException, StudentNotFoundException;
+    EntityModel<ScheduleApiResponse> createScheduleDay(List<ScheduleItem> scheduleItems, String username)
+            throws ScheduleNotFoundException, StudentNotFoundException, ResourceExistsException;
 
     EntityModel<ScheduleApiResponse> getScheduleByStudent(String username)
             throws ScheduleNotFoundException, StudentNotFoundException;

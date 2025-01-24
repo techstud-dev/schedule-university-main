@@ -289,6 +289,21 @@ public class ScheduleServiceImpl implements ScheduleService {
         return scheduleMapper.toResponse(schedule, scheduleDayId);
     }
 
+    @Override
+    @Transactional
+    public EntityModel<ScheduleApiResponse> createLesson(ScheduleItem scheduleItem, String username) throws ScheduleNotFoundException, StudentNotFoundException {
+        ScheduleDocument userSchedule = getScheduleByStudentOrThrow(username);
+        final DayOfWeek requestDayOfWeek = scheduleMapper.getDayOfWeekByRuName(scheduleItem.getDayOfWeek());
+        final boolean isEvenWeek = scheduleItem.isEven();
+        Map<DayOfWeek, ScheduleDayDocument> currentWeek = isEvenWeek ? userSchedule.getEvenWeekSchedule() : userSchedule.getOddWeekSchedule();
+        ScheduleDayDocument currentScheduleDayDocument = currentWeek.getOrDefault(requestDayOfWeek, null);
+
+        if (currentScheduleDayDocument != null) {
+
+        }
+
+        return scheduleMapper.toResponse(userSchedule);
+    }
 
     /**
      * Получить существующего студента по username или создать нового.

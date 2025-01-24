@@ -52,4 +52,7 @@ public interface ScheduleService {
 
     EntityModel<ScheduleApiResponse> getScheduleByStudent(String username)
             throws ScheduleNotFoundException, StudentNotFoundException;
+
+    EntityModel<ScheduleApiResponse> createLesson(ScheduleItem scheduleItem, String username)
+            throws ScheduleNotFoundException, StudentNotFoundException;
 }

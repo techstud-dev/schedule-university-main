@@ -396,9 +396,13 @@ public class ScheduleController {
 
     @PostMapping("/scheduleDay/lesson/")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public EntityModel<List<ScheduleItem>> saveLesson(@RequestBody ApiRequest<Object> saveObject,
-                                                      @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> saveLesson(
+            @RequestBody ApiRequest<ScheduleItem> saveObject,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+        log.info("Incoming request to create lesson by user: {}", principal.getName());
+        EntityModel<ScheduleApiResponse> updatedSchedule = scheduleService.createLesson(saveObject.getData(), principal.getName());
+        log.info("Outgoing response to create lesson by user: {}, body: {}", principal.getName(), updatedSchedule);
+        return ResponseEntity.ok(updatedSchedule);
     }
 
     @Operation(

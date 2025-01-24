@@ -80,6 +80,7 @@ public class ScheduleController {
         requestValidationService.validateImportRequest(importRequest);
         EntityModel<ScheduleApiResponse> importedSchedule =
                 scheduleService.importSchedule(importRequest.getData(), principal.getName());
+        log.info("Outgoing response to import schedule, body: {}, user: {}", importedSchedule, principal.getName());
         return ResponseEntity.ok(importedSchedule);
     }
 
@@ -120,6 +121,7 @@ public class ScheduleController {
         requestValidationService.validateImportRequest(importRequest);
         EntityModel<ScheduleApiResponse> importedSchedule =
                 scheduleService.forceImportSchedule(importRequest.getData(), principal.getName());
+        log.info("Outgoing response to force import schedule, body: {}, user: {}", importedSchedule, principal.getName());
         return ResponseEntity.ok(importedSchedule);
     }
 
@@ -148,7 +150,9 @@ public class ScheduleController {
             @Parameter(description = "ID расписания", required = true, example = "6763cdfcf16fce69d8f52945")
             @PathVariable String scheduleId,
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException {
+        log.info("Incoming request to get Schedule by user {}", principal.getName());
         EntityModel<ScheduleApiResponse> documentSchedule = scheduleService.getScheduleById(scheduleId);
+        log.info("Outgoing response to get Schedule by user {}, body: {}", principal.getName(), documentSchedule);
         return ResponseEntity.ok(documentSchedule);
     }
 
@@ -181,6 +185,7 @@ public class ScheduleController {
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to get schedule post authorize, user: {}", principal.getName());
         EntityModel<ScheduleApiResponse> documentSchedule = scheduleService.getScheduleByStudent(principal.getName());
+        log.info("Outgoing response to get schedule post authorize, user: {} ", principal.getName());
         return ResponseEntity.ok(documentSchedule);
 
     }
@@ -218,6 +223,7 @@ public class ScheduleController {
         log.info("Incoming request to save schedule, body: {}, user: {}", saveObject, principal.getName());
         EntityModel<ScheduleApiResponse> createdSchedule =
                 scheduleService.createSchedule(saveObject.getData(), principal.getName());
+        log.info("Outgoing response to save schedule, body: {}, user: {}", createdSchedule, principal.getName());
         return ResponseEntity.ok(createdSchedule);
     }
 
@@ -245,6 +251,7 @@ public class ScheduleController {
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to delete schedule, scheduleId: {}, user: {}", scheduleId, principal.getName());
         scheduleService.deleteSchedule(scheduleId, principal.getName());
+        log.info("Success response to delete schedule, scheduleId: {}, user: {}", scheduleId, principal.getName());
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
@@ -276,6 +283,7 @@ public class ScheduleController {
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to get schedule day, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
         CollectionModel<EntityModel<ScheduleItem>> scheduleDocument = scheduleService.getLessonsByStudentAndScheduleDay(principal.getName(), scheduleDayId);
+        log.info("Outgoing response to get schedule day, scheduleDayId: {}, user: {}, body: {}", scheduleDayId, principal.getName(), scheduleDocument);
         return ResponseEntity.ok().body(scheduleDocument);
     }
 
@@ -286,6 +294,7 @@ public class ScheduleController {
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException, ResourceExistsException {
         log.info("Incoming request to save schedule day by user: {}", principal.getName());
         EntityModel<ScheduleApiResponse> createdSchedule = scheduleService.createScheduleDay(saveObject.getData(), principal.getName());
+        log.info("Outgoing response to save schedule day by user: {}, body: {}", principal.getName(), createdSchedule);
         return ResponseEntity.ok().body(createdSchedule);
     }
 
@@ -317,6 +326,7 @@ public class ScheduleController {
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to update schedule day, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
         EntityModel<ScheduleApiResponse> updatedSchedule = scheduleService.updateScheduleDay(scheduleDayId, updateObject.getData(), principal.getName());
+        log.info("Outgoing response to update schedule day, scheduleDayId: {}, user: {}, body: {}", scheduleDayId, principal.getName(), updatedSchedule);
         return ResponseEntity.ok(updatedSchedule);
     }
 
@@ -347,6 +357,7 @@ public class ScheduleController {
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to delete schedule day, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
         EntityModel<ScheduleApiResponse> updatedSchedule = scheduleService.deleteScheduleDay(scheduleDayId, principal.getName());
+        log.info("Outgoing response to delete schedule day, scheduleDayId: {}, user: {}, updatedSchedule: {}", scheduleDayId, principal.getName(), updatedSchedule);
         return ResponseEntity.ok(updatedSchedule);
     }
 

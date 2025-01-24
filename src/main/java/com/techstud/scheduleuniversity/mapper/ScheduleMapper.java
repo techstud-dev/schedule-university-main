@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
+@SuppressWarnings("all")
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -190,6 +191,7 @@ public class ScheduleMapper {
 
         return resultScheduleDayDocument;
     }
+
     public ScheduleObjectDocument mapToScheduleObjectDocument(ScheduleItem item) {
         ScheduleType resolvedType;
         resolvedType = ScheduleType.ruValueOf(item.getType().toUpperCase());
@@ -205,7 +207,6 @@ public class ScheduleMapper {
         doc = scheduleRepositoryFacade.cascadeSave(doc);
         return doc;
     }
-
 
 
     private List<EntityModel<ScheduleItem>> mapWeek(Map<DayOfWeek, ScheduleDayDocument> documentWeek, boolean isEven) {

@@ -27,7 +27,7 @@ public class TokenScheduler {
         authClient.refreshTokens();
     }
 
-    @Scheduled(fixedRateString = "PT1H59M")
+    @Scheduled(fixedRateString = "PT59M")
     public void refreshRefreshToken() {
         log.info("Re-authenticating service at {}", Instant.now());
         authClient.authenticateService();

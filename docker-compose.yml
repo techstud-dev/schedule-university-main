@@ -12,6 +12,10 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - schedule_network
+
   grafana:
     image: grafana/grafana-enterprise:11.3.0
     container_name: grafana
@@ -55,6 +59,10 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: abuser
       ME_CONFIG_MONGODB_URL: mongodb://abuser:abuser@mongo:27017/
       ME_CONFIG_BASICAUTH: false
+
+networks:
+  schedule_network:
+    external: true
 
 volumes:
   postgres_data:

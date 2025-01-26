@@ -1,17 +1,12 @@
 package com.techstud.scheduleuniversity.controller;
 
 import com.techstud.scheduleuniversity.annotation.RateLimit;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
-import com.techstud.scheduleuniversity.exception.ParserException;
-import com.techstud.scheduleuniversity.exception.RequestException;
-import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
-import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
-import com.techstud.scheduleuniversity.mapper.ScheduleMapper;
+import com.techstud.scheduleuniversity.exception.*;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import com.techstud.scheduleuniversity.swagger.ApiRequestImportDto;
 import com.techstud.scheduleuniversity.swagger.ApiRequestSaveDto;
@@ -28,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -35,8 +31,6 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
-
-import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 @SuppressWarnings("unused")
 @RestController
@@ -48,7 +42,6 @@ public class ScheduleController {
 
     private final ScheduleService scheduleService;
     private final RequestValidationService requestValidationService;
-    private final ScheduleMapper scheduleMapper;
 
     @SuppressWarnings("all")
     @Operation(
@@ -75,19 +68,20 @@ public class ScheduleController {
     @RateLimit(capacity = 500, refillTokens = 500, refillPeriod = 1, periodUnit = "MINUTES")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> importSchedule(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Данные для импорта расписания",
-            required = true,
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ApiRequestImportDto.class),
-                    examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
+                    description = "Данные для импорта расписания",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiRequestImportDto.class),
+                            examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
             @RequestBody ApiRequest<ImportDto> importRequest,
             @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
         log.info("Incoming request to import schedule, body: {}, user: {}", importRequest, principal.getName());
         requestValidationService.validateImportRequest(importRequest);
-        ScheduleDocument documentSchedule =
+        EntityModel<ScheduleApiResponse> importedSchedule =
                 scheduleService.importSchedule(importRequest.getData(), principal.getName());
-        return ResponseEntity.ok(scheduleMapper.toResponse(documentSchedule));
+        log.info("Outgoing response to import schedule, body: {}, user: {}", importedSchedule, principal.getName());
+        return ResponseEntity.ok(importedSchedule);
     }
 
     @SuppressWarnings("all")
@@ -115,19 +109,20 @@ public class ScheduleController {
     @RateLimit(capacity = 200, refillTokens = 200, refillPeriod = 1, periodUnit = "MINUTES")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> forceImportSchedule(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Данные для импорта расписания",
-            required = true,
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = ApiRequestImportDto.class),
-                    examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
+                    description = "Данные для импорта расписания",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiRequestImportDto.class),
+                            examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
             @RequestBody ApiRequest<ImportDto> importRequest,
             @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
         log.info("Incoming request to force import schedule, body: {}, user: {}", importRequest, principal.getName());
         requestValidationService.validateImportRequest(importRequest);
-        ScheduleDocument documentSchedule =
+        EntityModel<ScheduleApiResponse> importedSchedule =
                 scheduleService.forceImportSchedule(importRequest.getData(), principal.getName());
-        return ResponseEntity.ok(scheduleMapper.toResponse(documentSchedule));
+        log.info("Outgoing response to force import schedule, body: {}, user: {}", importedSchedule, principal.getName());
+        return ResponseEntity.ok(importedSchedule);
     }
 
     @Operation(
@@ -155,8 +150,10 @@ public class ScheduleController {
             @Parameter(description = "ID расписания", required = true, example = "6763cdfcf16fce69d8f52945")
             @PathVariable String scheduleId,
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException {
-        ScheduleDocument documentSchedule = scheduleService.getScheduleById(scheduleId);
-        return ResponseEntity.ok(scheduleMapper.toResponse(documentSchedule));
+        log.info("Incoming request to get Schedule by user {}", principal.getName());
+        EntityModel<ScheduleApiResponse> documentSchedule = scheduleService.getScheduleById(scheduleId);
+        log.info("Outgoing response to get Schedule by user {}, body: {}", principal.getName(), documentSchedule);
+        return ResponseEntity.ok(documentSchedule);
     }
 
     @Operation(
@@ -187,13 +184,10 @@ public class ScheduleController {
     public ResponseEntity<EntityModel<ScheduleApiResponse>> getSchedulePostAuthorize(
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to get schedule post authorize, user: {}", principal.getName());
-        ScheduleDocument documentSchedule = scheduleService.getScheduleByStudentName(principal.getName());
-        if (documentSchedule == null) {
-            return new ResponseEntity<>(null, NO_CONTENT);
-        }
+        EntityModel<ScheduleApiResponse> documentSchedule = scheduleService.getScheduleByStudent(principal.getName());
+        log.info("Outgoing response to get schedule post authorize, user: {} ", principal.getName());
+        return ResponseEntity.ok(documentSchedule);
 
-        EntityModel<ScheduleApiResponse> response = scheduleMapper.toResponse(documentSchedule);
-        return ResponseEntity.ok(response);
     }
 
     @SuppressWarnings("all")
@@ -220,16 +214,17 @@ public class ScheduleController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> createSchedule(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Данные для сохранения расписания",
-            required = true,
-            content = @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = ApiRequestSaveDto.class)))
+                    description = "Данные для сохранения расписания",
+                    required = true,
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiRequestSaveDto.class)))
             @RequestBody ApiRequest<ScheduleParserResponse> saveObject,
             @Parameter(hidden = true) Principal principal) {
         log.info("Incoming request to save schedule, body: {}, user: {}", saveObject, principal.getName());
-        ScheduleDocument documentSchedule =
+        EntityModel<ScheduleApiResponse> createdSchedule =
                 scheduleService.createSchedule(saveObject.getData(), principal.getName());
-        return ResponseEntity.ok(scheduleMapper.toResponse(documentSchedule));
+        log.info("Outgoing response to save schedule, body: {}, user: {}", createdSchedule, principal.getName());
+        return ResponseEntity.ok(createdSchedule);
     }
 
     @Operation(
@@ -237,7 +232,7 @@ public class ScheduleController {
             description = "Удаляет расписание из БД по ID расписания и пользователю.",
             responses = {
                     @ApiResponse(
-                            responseCode = "200",
+                            responseCode = "204",
                             description = "Успешное удаление расписания",
                             content = @Content(mediaType = "application/json")),
                     @ApiResponse(
@@ -250,13 +245,14 @@ public class ScheduleController {
     )
     @DeleteMapping("/{scheduleId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<EntityModel<Void>> deleteSchedule(
+    public ResponseEntity<Void> deleteSchedule(
             @Parameter(description = "ID расписания", required = true, example = "6763cdfcf16fce69d8f52945")
             @PathVariable String scheduleId,
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to delete schedule, scheduleId: {}, user: {}", scheduleId, principal.getName());
         scheduleService.deleteSchedule(scheduleId, principal.getName());
-        return ResponseEntity.ok().body(null);
+        log.info("Success response to delete schedule, scheduleId: {}, user: {}", scheduleId, principal.getName());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
 
@@ -286,15 +282,46 @@ public class ScheduleController {
             @PathVariable String scheduleDayId,
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to get schedule day, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
-        ScheduleDocument scheduleDocument = scheduleService.getScheduleByStudentName(principal.getName());
-        return ResponseEntity.ok().body(scheduleMapper.toResponse(scheduleDocument, scheduleDayId));
+        CollectionModel<EntityModel<ScheduleItem>> scheduleDocument = scheduleService.getLessonsByStudentAndScheduleDay(principal.getName(), scheduleDayId);
+        log.info("Outgoing response to get schedule day, scheduleDayId: {}, user: {}, body: {}", scheduleDayId, principal.getName(), scheduleDocument);
+        return ResponseEntity.ok().body(scheduleDocument);
     }
 
+    @Operation(
+            summary = "Запрос на создание дня расписания",
+            description = "Создает день расписания у пользователя в расписании.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное создание дня расписания",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "День уже существует в расписании этой недели",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.DAY_IS_EXIST))),}
+    )
     @PostMapping("/scheduleDay/")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public EntityModel<ScheduleItem> createScheduleDay(@RequestBody ApiRequest<Object> saveObject,
-                                                                 @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> createScheduleDay(
+            @RequestBody ApiRequest<List<ScheduleItem>> saveObject,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException, ResourceExistsException {
+        log.info("Incoming request to save schedule day by user: {}", principal.getName());
+        EntityModel<ScheduleApiResponse> createdSchedule = scheduleService.createScheduleDay(saveObject.getData(), principal.getName());
+        log.info("Outgoing response to save schedule day by user: {}, body: {}", principal.getName(), createdSchedule);
+        return ResponseEntity.ok().body(createdSchedule);
     }
 
     @Operation(
@@ -324,8 +351,9 @@ public class ScheduleController {
             @RequestBody ApiRequest<List<ScheduleItem>> updateObject,
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to update schedule day, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
-        ScheduleDocument updatedSchedule = scheduleService.updateScheduleDay(scheduleDayId, updateObject.getData(), principal.getName());
-        return ResponseEntity.ok(scheduleMapper.toResponse(updatedSchedule));
+        EntityModel<ScheduleApiResponse> updatedSchedule = scheduleService.updateScheduleDay(scheduleDayId, updateObject.getData(), principal.getName());
+        log.info("Outgoing response to update schedule day, scheduleDayId: {}, user: {}, body: {}", scheduleDayId, principal.getName(), updatedSchedule);
+        return ResponseEntity.ok(updatedSchedule);
     }
 
     @Operation(
@@ -354,8 +382,9 @@ public class ScheduleController {
             @PathVariable String scheduleDayId,
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to delete schedule day, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
-        ScheduleDocument updatedSchedule = scheduleService.deleteScheduleDay(scheduleDayId, principal.getName());
-        return ResponseEntity.ok(scheduleMapper.toResponse(updatedSchedule));
+        EntityModel<ScheduleApiResponse> updatedSchedule = scheduleService.deleteScheduleDay(scheduleDayId, principal.getName());
+        log.info("Outgoing response to delete schedule day, scheduleDayId: {}, user: {}, updatedSchedule: {}", scheduleDayId, principal.getName(), updatedSchedule);
+        return ResponseEntity.ok(updatedSchedule);
     }
 
     @Operation(
@@ -386,15 +415,48 @@ public class ScheduleController {
             @PathVariable String timeWindowId,
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to get lesson, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
-        ScheduleDocument scheduleDocument = scheduleService.getScheduleByStudentName(principal.getName());
-        return ResponseEntity.ok(scheduleMapper.toResponse(scheduleDocument, scheduleDayId, timeWindowId));
+        CollectionModel<EntityModel<ScheduleItem>> scheduleItems = scheduleService.getLessonByStudentAndScheduleDayAndTimeWindow(principal.getName(), scheduleDayId, timeWindowId);
+        log.info("Outgoing response to get lesson scheduleDayId: {}, user: {}, payload: {}", scheduleDayId, principal.getName(), scheduleItems);
+        return ResponseEntity.ok(scheduleItems);
     }
 
+    @Operation(
+            summary = "Запрос на урока в дне расписания",
+            description = "Создает урок на определенный день, определенное время.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное создание урока",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "Урок на этот день и это время уже существует",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.LESSON_IS_EXIST)
+                            )
+                    )}
+    )
     @PostMapping("/scheduleDay/lesson/")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public EntityModel<List<ScheduleItem>> saveLesson(@RequestBody ApiRequest<Object> saveObject,
-                                                                   @Parameter(hidden = true) Principal principal) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> saveLesson(
+            @RequestBody ApiRequest<ScheduleItem> saveObject,
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+        log.info("Incoming request to create lesson by user: {}", principal.getName());
+        EntityModel<ScheduleApiResponse> updatedSchedule = scheduleService.createLesson(saveObject.getData(), principal.getName());
+        log.info("Outgoing response to create lesson by user: {}, body: {}", principal.getName(), updatedSchedule);
+        return ResponseEntity.ok(updatedSchedule);
     }
 
     @Operation(
@@ -425,8 +487,9 @@ public class ScheduleController {
             @Parameter(hidden = true) Principal principal)
             throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to update lesson, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
-        ScheduleDocument updatedSchedule = scheduleService.updateLesson(scheduleDayId, timeWindow, updateRequest.getData(), principal.getName());
-        return ResponseEntity.ok(scheduleMapper.toResponse(updatedSchedule));
+        EntityModel<ScheduleApiResponse> updatedSchedule = scheduleService.updateLesson(scheduleDayId, timeWindow, updateRequest.getData(), principal.getName());
+        log.info("Outgoing response to update lesson, scheduleDayId: {}, user: {}, payload: {}", scheduleDayId, principal.getName(), updatedSchedule);
+        return ResponseEntity.ok(updatedSchedule);
     }
 
     @Operation(
@@ -457,7 +520,8 @@ public class ScheduleController {
             @PathVariable String timeWindowId,
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to delete lesson, scheduleDayId: {}, user: {}", scheduleDayId, principal.getName());
-        ScheduleDocument updatedSchedule = scheduleService.deleteLesson(scheduleDayId, timeWindowId, principal.getName());
-        return ResponseEntity.ok(scheduleMapper.toResponse(updatedSchedule));
+        EntityModel<ScheduleApiResponse> updatedSchedule = scheduleService.deleteLesson(scheduleDayId, timeWindowId, principal.getName());
+        log.info("Outgoing response to delete lesson, scheduleDayId: {}, user: {}, payload: {}", scheduleDayId, principal.getName(), updatedSchedule);
+        return ResponseEntity.ok(updatedSchedule);
     }
 }

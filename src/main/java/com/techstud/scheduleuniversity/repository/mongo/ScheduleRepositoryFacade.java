@@ -3,17 +3,10 @@ package com.techstud.scheduleuniversity.repository.mongo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.gson.Gson;
 import com.techstud.scheduleuniversity.dao.HashableDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDayDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.ScheduleObjectDocument;
-import com.techstud.scheduleuniversity.dao.document.schedule.TimeSheetDocument;
+import com.techstud.scheduleuniversity.dao.document.schedule.*;
 import com.techstud.scheduleuniversity.dto.ScheduleType;
-import com.techstud.scheduleuniversity.dto.parser.response.ScheduleDayParserResponse;
-import com.techstud.scheduleuniversity.dto.parser.response.ScheduleObjectParserResponse;
-import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
-import com.techstud.scheduleuniversity.dto.parser.response.TimeSheetParserResponse;
+import com.techstud.scheduleuniversity.dto.parser.response.*;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
 import com.techstud.scheduleuniversity.mapper.ScheduleObjectMapper;
 import com.techstud.scheduleuniversity.mapper.TimeSheetMapper;
@@ -30,7 +23,6 @@ import java.security.MessageDigest;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.function.BiConsumer;
 
 @Component
 @Slf4j
@@ -50,19 +42,148 @@ public class ScheduleRepositoryFacade {
             .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
+
+    /**
+     * Каскадное сохранение ScheduleDocument, если он уже сформирован в коде
+     * (не через парсер, а, например, после каких-то преобразований).
+     */
+    public ScheduleDocument cascadeSave(ScheduleDocument scheduleDocument) {
+        try {
+            // Пробегаем по чётной неделе
+            Map<DayOfWeek, ScheduleDayDocument> evenWeekResult = new LinkedHashMap<>();
+            if (scheduleDocument.getEvenWeekSchedule() != null) {
+                scheduleDocument.getEvenWeekSchedule().forEach((dayOfWeek, dayDoc) -> {
+                    ScheduleDayDocument savedDay = cascadeSave(dayDoc);
+                    evenWeekResult.put(dayOfWeek, savedDay);
+                });
+            }
+
+            // Пробегаем по нечётной неделе
+            Map<DayOfWeek, ScheduleDayDocument> oddWeekResult = new LinkedHashMap<>();
+            if (scheduleDocument.getOddWeekSchedule() != null) {
+                scheduleDocument.getOddWeekSchedule().forEach((dayOfWeek, dayDoc) -> {
+                    ScheduleDayDocument savedDay = cascadeSave(dayDoc);
+                    oddWeekResult.put(dayOfWeek, savedDay);
+                });
+            }
+
+            // Подменяем в оригинальном документе
+            scheduleDocument.setEvenWeekSchedule(evenWeekResult);
+            scheduleDocument.setOddWeekSchedule(oddWeekResult);
+
+            // Вычисляем хэш и сохраняем
+            computeAndSetHash(scheduleDocument);
+            return findOrSave(scheduleDocument, ScheduleDocument.class, scheduleRepository);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error cascade save scheduleDocument", e);
+        }
+    }
+
+    /**
+     * Каскадное сохранение ScheduleDayDocument.
+     */
+    public ScheduleDayDocument cascadeSave(ScheduleDayDocument scheduleDayDocument) {
+        try {
+            // Сформируем новый Map<TimeSheetId, List<ScheduleObjectDocument>> с каскадным сохранением
+            Map<String, List<ScheduleObjectDocument>> updatedLessons = new LinkedHashMap<>();
+            if (scheduleDayDocument.getLessons() != null) {
+                for (Map.Entry<String, List<ScheduleObjectDocument>> entry : scheduleDayDocument.getLessons().entrySet()) {
+                    String timeSheetId = entry.getKey();
+                    List<ScheduleObjectDocument> objects = entry.getValue();
+
+                    // Попробуем найти TimeSheet по ID (если структура именно так связана)
+                    TimeSheetDocument timeSheet = timeSheetRepository.findById(timeSheetId).orElse(null);
+
+                    if (timeSheet == null) {
+                        throw new RuntimeException("TimeSheet with ID = " + timeSheetId + " not found in DB. " +
+                                "Can't cascade save day properly.");
+                    }
+
+                    // Сохраняем/находим каждую пару ScheduleObjectDocument
+                    List<ScheduleObjectDocument> savedObjects = new ArrayList<>();
+                    if (objects != null) {
+                        for (ScheduleObjectDocument obj : objects) {
+                            ScheduleObjectDocument savedObj = cascadeSave(obj);
+                            savedObjects.add(savedObj);
+                        }
+                    }
+
+                    // Кладём в новый мап уже сохранённые ID
+                    updatedLessons.put(timeSheet.getId(), savedObjects);
+                }
+            }
+
+            scheduleDayDocument.setLessons(updatedLessons);
+
+            computeAndSetHash(scheduleDayDocument);
+            return findOrSave(scheduleDayDocument, ScheduleDayDocument.class, scheduleDayRepository);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error cascade save scheduleDayDocument", e);
+        }
+    }
+
+    /**
+     * Каскадное сохранение одного урока (ScheduleObjectDocument).
+     * Т.к. у ScheduleObjectDocument нет «дочерних» сущностей, тут всё просто:
+     */
+    public ScheduleObjectDocument cascadeSave(ScheduleObjectDocument scheduleObjectDocument) {
+        try {
+            computeAndSetHash(scheduleObjectDocument);
+            return findOrSave(scheduleObjectDocument, ScheduleObjectDocument.class, scheduleObjectRepository);
+        } catch (Exception e) {
+            throw new RuntimeException("Error cascade save scheduleObjectDocument", e);
+        }
+    }
+
+    /**
+     * Каскадное (или «умное») сохранение TimeSheetDocument.
+     * Если у TimeSheetDocument нет вложенных сущностей, фактически это просто
+     * «посчитать хэш → найти/сохранить».
+     */
+    public TimeSheetDocument cascadeSave(TimeSheetDocument timeSheetDocument) {
+        try {
+            computeAndSetHash(timeSheetDocument);
+            return findOrSave(timeSheetDocument, TimeSheetDocument.class, timeSheetRepository);
+        } catch (Exception e) {
+            throw new RuntimeException("Error cascade save timeSheetDocument", e);
+        }
+    }
+
+    /**
+     * Каскадное сохранение расписания, полученного из парсера (ScheduleParserResponse).
+     * Использует приватный helper `cascadeWeekSave` для чётной/нечётной недели.
+     */
     public ScheduleDocument cascadeSave(ScheduleParserResponse scheduleDto) {
         try {
             ScheduleDocument schedule = new ScheduleDocument();
             schedule.setSnapshotDate(scheduleDto.getSnapshotDate());
             schedule.setEvenWeekSchedule(cascadeWeekSave(scheduleDto.getEvenWeekSchedule()));
             schedule.setOddWeekSchedule(cascadeWeekSave(scheduleDto.getOddWeekSchedule()));
-            computeAndSetHash(schedule);
 
+            computeAndSetHash(schedule);
             return findOrSave(schedule, ScheduleDocument.class, scheduleRepository);
+
         } catch (Exception e) {
             throw new RuntimeException("Error cascade save schedule", e);
         }
     }
+
+    /**
+     * «Умное» сохранение TimeSheetDocument:
+     * фактически то же самое, что и cascadeSave(timeSheet),
+     * но может содержать дополнительную логику, если нужно.
+     */
+    public TimeSheetDocument smartTimeSheetSave(TimeSheetDocument timeSheetDocument) {
+        try {
+            computeAndSetHash(timeSheetDocument);
+            return findOrSave(timeSheetDocument, TimeSheetDocument.class, timeSheetRepository);
+        } catch (Exception e) {
+            throw new RuntimeException("Error smart TimeSheet save", e);
+        }
+    }
+
 
     public ScheduleDocument smartScheduleDayDelete(ScheduleDocument scheduleDocument, ScheduleDayDocument scheduleDayDocument) {
         try {
@@ -76,12 +197,9 @@ public class ScheduleRepositoryFacade {
 
             if (removedEven || removedOdd) {
                 scheduleDayRepository.delete(scheduleDayDocument);
-
                 computeAndSetHash(scheduleDocument);
-
                 return scheduleRepository.save(scheduleDocument);
             }
-
             return scheduleDocument;
 
         } catch (Exception e) {
@@ -95,9 +213,7 @@ public class ScheduleRepositoryFacade {
                 scheduleDay.getLessons().forEach((timeSheetId, scheduleObjects) -> {
                     TimeSheetDocument timeSheet = timeSheetRepository.findById(timeSheetId).orElseThrow();
                     if (timeWindowId.equals(timeSheet.getId())) {
-
                         scheduleObjectRepository.deleteAll(scheduleObjects);
-
                         scheduleDay.getLessons().put(timeSheetId, new ArrayList<>());
                     }
                 });
@@ -109,9 +225,7 @@ public class ScheduleRepositoryFacade {
                 scheduleDay.getLessons().forEach((timeSheetId, scheduleObjects) -> {
                     TimeSheetDocument timeSheet = timeSheetRepository.findById(timeSheetId).orElseThrow();
                     if (timeWindowId.equals(timeSheet.getId())) {
-
                         scheduleObjectRepository.deleteAll(scheduleObjects);
-
                         scheduleDay.getLessons().put(timeSheetId, new ArrayList<>());
                     }
                 });
@@ -251,6 +365,24 @@ public class ScheduleRepositoryFacade {
     }
 
 
+    /**
+     * Приватный метод каскадного сохранения недели, используется в cascadeSave(ScheduleParserResponse).
+     */
+    private Map<DayOfWeek, ScheduleDayDocument> cascadeWeekSave(Map<DayOfWeek, ScheduleDayParserResponse> weekSchedule) {
+        Map<DayOfWeek, ScheduleDayDocument> result = new LinkedHashMap<>();
+        if (weekSchedule != null) {
+            weekSchedule.forEach((dayOfWeek, scheduleDayDto) -> {
+                ScheduleDayDocument scheduleDay = cascadeDaySave(scheduleDayDto);
+                boolean allEmpty = scheduleDay.getLessons().isEmpty()
+                        || scheduleDay.getLessons().values().stream().allMatch(List::isEmpty);
+                if (!allEmpty) {
+                    result.put(dayOfWeek, scheduleDay);
+                }
+            });
+        }
+        return result;
+    }
+
     private boolean isTimeMatching(String timeRange, TimeSheetDocument timeSheetDocument) {
 
         LocalTime from = timeSheetDocument.getFrom();
@@ -267,81 +399,66 @@ public class ScheduleRepositoryFacade {
         return rangeFrom.equals(from) && rangeTo.equals(to);
     }
 
-    private Map<DayOfWeek, ScheduleDayDocument> cascadeWeekSave(Map<DayOfWeek, ScheduleDayParserResponse> weekSchedule) {
-        Map<DayOfWeek, ScheduleDayDocument> result = new LinkedHashMap<>();
-        weekSchedule.forEach((dayOfWeek, scheduleDayDto) -> {
-            ScheduleDayDocument scheduleDay = cascadeDaySave(scheduleDayDto);
-
-            boolean allEmpty = scheduleDay.getLessons().isEmpty()
-                    || scheduleDay.getLessons().values().stream().allMatch(List::isEmpty);
-
-            if (!allEmpty) {
-                result.put(dayOfWeek, scheduleDay);
-            }
-        });
-        return result;
-    }
-
-
+    /**
+     * Приватный метод каскадного сохранения дня, используется внутри cascadeWeekSave(...).
+     * Преобразует DTO (ScheduleDayParserResponse) в документ, затем сохраняет.
+     */
     private ScheduleDayDocument cascadeDaySave(ScheduleDayParserResponse scheduleDayDto) {
         try {
             ScheduleDayDocument scheduleDay = new ScheduleDayDocument();
             scheduleDay.setDate(scheduleDayDto.getDate());
             scheduleDay.setLessons(cascadeLessonSave(scheduleDayDto.getLessons()));
-            computeAndSetHash(scheduleDay);
 
+            computeAndSetHash(scheduleDay);
             return findOrSave(scheduleDay, ScheduleDayDocument.class, scheduleDayRepository);
         } catch (Exception e) {
             throw new RuntimeException("Error cascade save day", e);
         }
     }
 
+    /**
+     * Приватный метод каскадного сохранения lessons (Map<TimeSheetParserResponse, List<ScheduleObjectParserResponse>>).
+     */
     private Map<String, List<ScheduleObjectDocument>> cascadeLessonSave(
             Map<TimeSheetParserResponse, List<ScheduleObjectParserResponse>> lessons) {
 
         Map<String, List<ScheduleObjectDocument>> result = new LinkedHashMap<>();
-        lessons.forEach((timeSheetDto, scheduleObjectsDto) -> {
-            try {
-                TimeSheetDocument timeSheet = timeSheetMapper.toDocument(timeSheetDto);
-                computeAndSetHash(timeSheet);
-                timeSheet = findOrSave(timeSheet, TimeSheetDocument.class, timeSheetRepository);
+        if (lessons != null) {
+            lessons.forEach((timeSheetDto, scheduleObjectsDto) -> {
+                try {
+                    TimeSheetDocument timeSheet = timeSheetMapper.toDocument(timeSheetDto);
+                    computeAndSetHash(timeSheet);
+                    timeSheet = findOrSave(timeSheet, TimeSheetDocument.class, timeSheetRepository);
 
-                List<ScheduleObjectDocument> savedObjects = scheduleObjectMapper.toDocument(scheduleObjectsDto).stream()
-                        .map(scheduleObject -> {
-                            try {
-                                computeAndSetHash(scheduleObject);
-                                return findOrSave(scheduleObject, ScheduleObjectDocument.class, scheduleObjectRepository);
-                            } catch (Exception e) {
-                                throw new RuntimeException("Error of save ScheduleObject", e);
-                            }
-                        })
-                        .toList();
+                    List<ScheduleObjectDocument> savedObjects = scheduleObjectMapper.toDocument(scheduleObjectsDto).stream()
+                            .map(scheduleObject -> {
+                                try {
+                                    computeAndSetHash(scheduleObject);
+                                    return findOrSave(scheduleObject, ScheduleObjectDocument.class, scheduleObjectRepository);
+                                } catch (Exception e) {
+                                    throw new RuntimeException("Error saving ScheduleObjectDocument", e);
+                                }
+                            })
+                            .toList();
 
-                result.put(timeSheet.getId(), savedObjects);
-            } catch (Exception e) {
-                throw new RuntimeException("Error of save lessons", e);
-            }
-        });
+                    result.put(timeSheet.getId(), savedObjects);
+                } catch (Exception e) {
+                    throw new RuntimeException("Error saving TimeSheet or schedule objects", e);
+                }
+            });
+        }
         return result;
     }
 
-    private List<ScheduleObjectDocument> mapToDocument(List<ScheduleItem> scheduleItems) {
-        return scheduleItems.stream()
-                .map(scheduleItem -> {
-                    ScheduleObjectDocument scheduleObjectDocument = new ScheduleObjectDocument();
-                    scheduleObjectDocument.setName(scheduleItem.getName());
-                    scheduleObjectDocument.setTeacher(scheduleItem.getTeacher());
-                    scheduleObjectDocument.setGroups(scheduleItem.getGroups());
-                    scheduleObjectDocument.setType(ScheduleType.ruValueOf(scheduleItem.getType()));
-                    scheduleObjectDocument.setPlace(scheduleItem.getPlace());
-                    return scheduleObjectDocument;
-                })
-                .toList();
-    }
-
+    // ---------------------------------------------------------
+    // 4. БАЗОВЫЕ findOrSave & computeHash
+    // ---------------------------------------------------------
     private <T extends HashableDocument> T findOrSave(T entity, Class<T> entityClass, MongoRepository<T, String> repository) {
         T existingEntity = findExistingByHash(entity, entityClass);
-        return existingEntity != null ? existingEntity : repository.save(entity);
+        if (existingEntity != null) {
+            return existingEntity;
+        }
+        return repository.save(entity);
     }
 
     private <T extends HashableDocument> T findExistingByHash(T entity, Class<T> entityClass) {

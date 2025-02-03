@@ -1,16 +1,21 @@
-package com.techstud.scheduleuniversity.dao.entity;
+package com.techstud.scheduleuniversity.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "university", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"shortName", "fullName", "url", "mongoDbId"})
+        @UniqueConstraint(columnNames = {
+                "shortName",
+                "fullName",
+                "url"})
 })
 @Data
 @NoArgsConstructor
-public class University {
+public class University extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -26,9 +31,4 @@ public class University {
     @Column(name = "url")
     private String url;
 
-    @Column(name = "mongo_db_id")
-    private String mongoDbId;
-
-    @Version
-    private Long version;
 }

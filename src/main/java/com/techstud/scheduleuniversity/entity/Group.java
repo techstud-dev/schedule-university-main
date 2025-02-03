@@ -1,18 +1,20 @@
-package com.techstud.scheduleuniversity.dao.entity;
+package com.techstud.scheduleuniversity.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "university_group", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"university_group_id", "group_code"})
+        @UniqueConstraint(columnNames = {
+                "university_group_id",
+                "group_code"})
 })
 @Data
 @NoArgsConstructor
-public class UniversityGroup {
+public class Group extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -29,10 +31,11 @@ public class UniversityGroup {
     @Column(name = "group_code")
     private String groupCode;
 
-    @Column(name = "schedule_mongo_id")
-    private String scheduleMongoId;
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "schedule_id", referencedColumnName = "id")
+    private Schedule schedule;
 
-    public UniversityGroup(University university, String groupCode, String universityGroupId) {
+    public Group(University university, String groupCode, String universityGroupId) {
         this.university = university;
         this.groupCode = groupCode;
         this.universityGroupId = universityGroupId;

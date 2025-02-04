@@ -20,7 +20,7 @@ public class Schedule extends AuditableEntity {
     @SequenceGenerator(name = "schedule_id_seq", sequenceName = "schedule_id_seq", allocationSize = 1)
     private Long id;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
             name = "schedule_id_to_lesson",
             joinColumns = @JoinColumn(name = "schedule_id"),

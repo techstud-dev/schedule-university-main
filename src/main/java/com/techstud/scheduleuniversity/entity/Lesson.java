@@ -22,7 +22,7 @@ public class Lesson extends AuditableEntity {
 
     private boolean isEvenWeek;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "time_sheet_id", nullable = false)
     private TimeSheet timeSheet;
 
@@ -39,11 +39,11 @@ public class Lesson extends AuditableEntity {
     @JoinColumn(name = "teacher_id")
     private Teacher teacher;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "place_id")
     private Place place;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
             name = "lesson_group",
             joinColumns = @JoinColumn(name = "lesson_id"),

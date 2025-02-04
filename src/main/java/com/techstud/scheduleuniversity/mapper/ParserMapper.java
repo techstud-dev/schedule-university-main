@@ -64,7 +64,7 @@ public class ParserMapper implements Mapper<ScheduleParserResponse, Schedule> {
                 ScheduleDayParserResponse dayResponse = dayEntry.getValue();
 
                 if (dayResponse.getLessons() != null) {
-                    // Для каждого временного интервала (TimeSheet) и списка занятий
+
                     for (Map.Entry<TimeSheetParserResponse, List<ScheduleObjectParserResponse>> timeEntry : dayResponse.getLessons().entrySet()) {
                         TimeSheetParserResponse timeSheetResponse = timeEntry.getKey();
                         TimeSheet timeSheet = mapTimeSheet(timeSheetResponse);

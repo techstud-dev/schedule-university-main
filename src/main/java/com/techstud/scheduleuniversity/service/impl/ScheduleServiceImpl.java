@@ -19,7 +19,6 @@ import com.techstud.scheduleuniversity.repository.UniversityRepository;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Service;
@@ -58,7 +57,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
 
         University university = universityRepository
-                .findByshortName(importDto.getUniversityShortName())
+                .findByShortName(importDto.getUniversityShortName())
                 .orElseThrow(() -> new ResourceNotFoundException("University '" + importDto.getUniversityShortName() + "' not found"));
 
         Group currentGroup = groupRepository

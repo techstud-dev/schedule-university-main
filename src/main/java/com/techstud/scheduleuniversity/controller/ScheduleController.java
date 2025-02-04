@@ -75,7 +75,7 @@ public class ScheduleController {
                             schema = @Schema(implementation = ApiRequestImportDto.class),
                             examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
             @RequestBody ApiRequest<ImportDto> importRequest,
-            @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
+            @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException, ParserResponseTimeoutException {
         log.info("Incoming request to import schedule, body: {}, user: {}", importRequest, principal.getName());
         requestValidationService.validateImportRequest(importRequest);
         EntityModel<ScheduleApiResponse> importedSchedule =

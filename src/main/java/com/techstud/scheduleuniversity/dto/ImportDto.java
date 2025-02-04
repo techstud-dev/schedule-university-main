@@ -16,7 +16,7 @@ import java.io.Serializable;
 public class ImportDto implements Serializable {
 
     @Schema(description = "Аббревиатура университета", example = "SSAU", type = "string")
-    private String universityName;
+    private String universityShortName;
 
     @Schema(description = "Номер группы", example = "1237-150403D", type = "string")
     private String groupCode;

@@ -32,8 +32,8 @@ public class Group extends AuditableEntity {
     private String groupCode;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_id", referencedColumnName = "id")
-    private Schedule schedule;
+    @JoinColumn(name = "group_schedule_id", referencedColumnName = "id")
+    private Schedule groupSchedule;
 
     public Group(University university, String groupCode, String universityGroupId) {
         this.university = university;

@@ -4,10 +4,7 @@ import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
-import com.techstud.scheduleuniversity.exception.ParserException;
-import com.techstud.scheduleuniversity.exception.ResourceExistsException;
-import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
-import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
+import com.techstud.scheduleuniversity.exception.*;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 
@@ -16,35 +13,35 @@ import java.util.List;
 public interface ScheduleService {
 
     EntityModel<ScheduleApiResponse> importSchedule(ImportDto importDto, String username)
-            throws ScheduleNotFoundException, ParserException;
+            throws ResourceNotFoundException, ParserException, ParserResponseTimeoutException;
 
     EntityModel<ScheduleApiResponse> forceImportSchedule(ImportDto importDto, String username)
             throws ParserException, ScheduleNotFoundException;
 
     EntityModel<ScheduleApiResponse> createSchedule(ScheduleParserResponse saveDto, String username);
 
-    void deleteSchedule(String id, String username)
+    void deleteSchedule(Long id, String username)
             throws ScheduleNotFoundException, StudentNotFoundException;
 
-    EntityModel<ScheduleApiResponse> deleteScheduleDay(String dayId, String username)
+    EntityModel<ScheduleApiResponse> deleteScheduleDay(String dayId, String username, boolean isEvenWeek)
             throws ScheduleNotFoundException, StudentNotFoundException;
 
-    EntityModel<ScheduleApiResponse> deleteLesson(String scheduleDayId, String timeWindowId, String username)
+    EntityModel<ScheduleApiResponse> deleteLesson(String dayOfWeek, Long timeWindowId, String username)
             throws ScheduleNotFoundException, StudentNotFoundException;
 
-    EntityModel<ScheduleApiResponse> getScheduleById(String scheduleId) throws ScheduleNotFoundException;
+    EntityModel<ScheduleApiResponse> getScheduleById(Long scheduleId) throws ScheduleNotFoundException;
 
     CollectionModel<EntityModel<ScheduleItem>> getLessonByStudentAndScheduleDayAndTimeWindow(
             String studentName,
-            String scheduleDayId,
-            String timeWindowId) throws ScheduleNotFoundException, StudentNotFoundException;
+            String dayOfWeek,
+            Long timeWindowId) throws ScheduleNotFoundException, StudentNotFoundException;
 
-    CollectionModel<EntityModel<ScheduleItem>> getLessonsByStudentAndScheduleDay(String username, String scheduleDayId)
+    CollectionModel<EntityModel<ScheduleItem>> getLessonsByStudentAndScheduleDay(String username, String dayOfWeek, boolean isEvenWeek)
             throws ScheduleNotFoundException, StudentNotFoundException;
-    EntityModel<ScheduleApiResponse> updateLesson(String scheduleDayId, String timeWindowId, ScheduleItem scheduleItem, String username)
+    EntityModel<ScheduleApiResponse> updateLesson(String dayOfWeek, Long timeWindowId, ScheduleItem scheduleItem, String username)
             throws ScheduleNotFoundException, StudentNotFoundException;
 
-    EntityModel<ScheduleApiResponse> updateScheduleDay(String dayId, List<ScheduleItem> scheduleItems, String username)
+    EntityModel<ScheduleApiResponse> updateScheduleDay(String dayId, List<ScheduleItem> scheduleItems, String username, boolean isEvenWeek)
             throws ScheduleNotFoundException, StudentNotFoundException;
 
     EntityModel<ScheduleApiResponse> createScheduleDay(List<ScheduleItem> scheduleItems, String username)

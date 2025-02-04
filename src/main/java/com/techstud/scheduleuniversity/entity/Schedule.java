@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = false)
@@ -25,4 +26,8 @@ public class Schedule extends AuditableEntity {
             joinColumns = @JoinColumn(name = "schedule_id"),
             inverseJoinColumns = @JoinColumn(name = "lesson_id"))
     private List<Lesson> lessonList;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private LocalDate snapshotDate;
+
 }

@@ -1,24 +1,32 @@
 package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.dto.ImportDto;
+import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
-import com.techstud.scheduleuniversity.exception.ParserException;
-import com.techstud.scheduleuniversity.exception.ResourceExistsException;
-import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
-import com.techstud.scheduleuniversity.exception.StudentNotFoundException;
+import com.techstud.scheduleuniversity.entity.Group;
+import com.techstud.scheduleuniversity.entity.Schedule;
+import com.techstud.scheduleuniversity.entity.Student;
+import com.techstud.scheduleuniversity.entity.University;
+import com.techstud.scheduleuniversity.exception.*;
 import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
 import com.techstud.scheduleuniversity.kafka.KafkaProducer;
+import com.techstud.scheduleuniversity.mapper.Mapper;
+import com.techstud.scheduleuniversity.repository.GroupRepository;
+import com.techstud.scheduleuniversity.repository.StudentRepository;
+import com.techstud.scheduleuniversity.repository.UniversityRepository;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +35,10 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     private final KafkaProducer kafkaProducer;
     private final KafkaMessageObserver messageObserver;
+    private final GroupRepository groupRepository;
+    private final UniversityRepository universityRepository;
+    private final StudentRepository studentRepository;
+    private final Mapper<Schedule, EntityModel<ScheduleApiResponse>> scheduleMapper;
 
     /**
      * Импорт расписания (пытаемся найти существующее, если нет — парсим и сохраняем).
@@ -34,8 +46,41 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     @Transactional
     public EntityModel<ScheduleApiResponse> importSchedule(ImportDto importDto, String username)
-            throws ScheduleNotFoundException, ParserException {
-        return null;
+            throws ResourceNotFoundException, ParserException, ParserResponseTimeoutException {
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Student with username '" + username + "' not found"));
+
+        Schedule currentSchedule = student.getPersonalSchedule();
+
+        if (currentSchedule != null) {
+            log.warn("Found personal schedule by student. Return this: {}", currentSchedule);
+           return scheduleMapper.map(currentSchedule);
+        }
+
+        University university = universityRepository
+                .findByshortName(importDto.getUniversityShortName())
+                .orElseThrow(() -> new ResourceNotFoundException("University '" + importDto.getUniversityShortName() + "' not found"));
+
+        Group currentGroup = groupRepository
+                .findByUniversityAndGroupCode(university, importDto.getGroupCode())
+                .orElseThrow(() -> new ResourceNotFoundException("Group '" + importDto.getGroupCode() + "' by university '"
+                        +  importDto.getUniversityShortName() + "' not found"));
+
+        currentSchedule = currentGroup.getGroupSchedule();
+
+        if (currentSchedule != null) {
+            log.info("Found schedule in db: {}", currentSchedule);
+            return scheduleMapper.map(currentSchedule);
+        } else {
+            ParsingTask task = ParsingTask
+                    .builder()
+                    .groupId(currentGroup.getUniversityGroupId())
+                    .universityName(university.getShortName())
+                    .build();
+            Schedule parsedSchedule = parseSchedule(task);
+            log.info("Sending parsingTask to parser: {}", task);
+            return scheduleMapper.map(parsedSchedule);
+        }
     }
 
     /**
@@ -62,7 +107,7 @@ public class ScheduleServiceImpl implements ScheduleService {
      */
     @Override
     @Transactional
-    public void deleteSchedule(String scheduleId, String username)
+    public void deleteSchedule(Long scheduleId, String username)
             throws ScheduleNotFoundException, StudentNotFoundException {
 
     }
@@ -72,7 +117,7 @@ public class ScheduleServiceImpl implements ScheduleService {
      */
     @Override
     @Transactional
-    public EntityModel<ScheduleApiResponse> deleteScheduleDay(String dayId, String username)
+    public EntityModel<ScheduleApiResponse> deleteScheduleDay(String dayId, String username, boolean isEvenWeek)
             throws ScheduleNotFoundException, StudentNotFoundException {
         return null;
     }
@@ -82,7 +127,7 @@ public class ScheduleServiceImpl implements ScheduleService {
      */
     @Override
     @Transactional
-    public EntityModel<ScheduleApiResponse> deleteLesson(String scheduleDayId, String timeWindowId, String username)
+    public EntityModel<ScheduleApiResponse> deleteLesson(String dayOfWeek, Long timeWindowId, String username)
             throws ScheduleNotFoundException, StudentNotFoundException {
         return null;
     }
@@ -92,7 +137,7 @@ public class ScheduleServiceImpl implements ScheduleService {
      */
     @Override
     @Transactional
-    public EntityModel<ScheduleApiResponse> getScheduleById(String scheduleId) throws ScheduleNotFoundException {
+    public EntityModel<ScheduleApiResponse> getScheduleById(Long scheduleId) throws ScheduleNotFoundException {
         return null;
     }
 
@@ -102,7 +147,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     @Transactional
     public CollectionModel<EntityModel<ScheduleItem>> getLessonByStudentAndScheduleDayAndTimeWindow(
-            String studentName, String scheduleDayId, String timeWindowId)
+            String studentName, String dayOfWeek, Long timeWindowId)
             throws ScheduleNotFoundException, StudentNotFoundException {
 
         return null;
@@ -113,8 +158,8 @@ public class ScheduleServiceImpl implements ScheduleService {
      */
     @Override
     @Transactional
-    public EntityModel<ScheduleApiResponse> updateLesson(String scheduleDayId,
-                                                         String timeWindowId,
+    public EntityModel<ScheduleApiResponse> updateLesson(String dayOfWeek,
+                                                         Long timeWindowId,
                                                          ScheduleItem scheduleItem,
                                                          String username)
             throws ScheduleNotFoundException, StudentNotFoundException {
@@ -129,7 +174,8 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Transactional
     public EntityModel<ScheduleApiResponse> updateScheduleDay(String dayId,
                                                               List<ScheduleItem> scheduleItems,
-                                                              String username)
+                                                              String username,
+                                                              boolean isEvenWeek)
             throws ScheduleNotFoundException, StudentNotFoundException {
 
         return null;
@@ -160,7 +206,9 @@ public class ScheduleServiceImpl implements ScheduleService {
      */
     @Override
     @Transactional(readOnly = true)
-    public CollectionModel<EntityModel<ScheduleItem>> getLessonsByStudentAndScheduleDay(String username, String scheduleDayId)
+    public CollectionModel<EntityModel<ScheduleItem>> getLessonsByStudentAndScheduleDay(String username,
+                                                                                        String dayOfWeek,
+                                                                                        boolean isEvenWeek)
             throws ScheduleNotFoundException, StudentNotFoundException {
         return null;
     }
@@ -175,4 +223,10 @@ public class ScheduleServiceImpl implements ScheduleService {
         return null;
     }
 
+    private Schedule parseSchedule(ParsingTask task) throws ParserException, ParserResponseTimeoutException {
+        UUID messageId = kafkaProducer.sendToParsingQueue(task);
+        messageObserver.registerMessage(messageId);
+        ScheduleParserResponse response = messageObserver.waitForParserResponse(messageId);
+        return null;
+    }
 }

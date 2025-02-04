@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.time.DayOfWeek;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = false)
@@ -24,6 +25,12 @@ public class Lesson extends AuditableEntity {
     @ManyToOne
     @JoinColumn(name = "time_sheet_id", nullable = false)
     private TimeSheet timeSheet;
+
+    @Column(name = "name")
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    private DayOfWeek dayOfWeek;
 
     @Enumerated(EnumType.STRING)
     private LessonType type;

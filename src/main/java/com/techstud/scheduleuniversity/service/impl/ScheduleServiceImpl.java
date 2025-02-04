@@ -38,6 +38,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final UniversityRepository universityRepository;
     private final StudentRepository studentRepository;
     private final Mapper<Schedule, EntityModel<ScheduleApiResponse>> scheduleMapper;
+    private final Mapper<ScheduleParserResponse, Schedule> parserMapper;
 
     /**
      * Импорт расписания (пытаемся найти существующее, если нет — парсим и сохраняем).
@@ -77,6 +78,8 @@ public class ScheduleServiceImpl implements ScheduleService {
                     .universityName(university.getShortName())
                     .build();
             Schedule parsedSchedule = parseSchedule(task);
+            parsedSchedule.getMetadata().put("universityShortName", university.getShortName());
+            parsedSchedule.getMetadata().put("username", student.getUsername());
             log.info("Sending parsingTask to parser: {}", task);
             return scheduleMapper.map(parsedSchedule);
         }
@@ -226,6 +229,6 @@ public class ScheduleServiceImpl implements ScheduleService {
         UUID messageId = kafkaProducer.sendToParsingQueue(task);
         messageObserver.registerMessage(messageId);
         ScheduleParserResponse response = messageObserver.waitForParserResponse(messageId);
-        return null;
+        return parserMapper.map(response);
     }
 }

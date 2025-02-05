@@ -13,4 +13,5 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     Optional<Group> findByUniversityAndGroupCode(University university, String groupCode);
     List<Group> findAllByUniversity(University university);
+    Optional<Group> findByUniversityGroupIdAndGroupCode(String universityGroupId, String groupCode);
 }

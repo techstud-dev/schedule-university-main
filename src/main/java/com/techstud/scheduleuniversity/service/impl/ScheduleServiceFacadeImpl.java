@@ -16,6 +16,7 @@ import com.techstud.scheduleuniversity.mapper.Mapper;
 import com.techstud.scheduleuniversity.repository.GroupRepository;
 import com.techstud.scheduleuniversity.repository.StudentRepository;
 import com.techstud.scheduleuniversity.repository.UniversityRepository;
+import com.techstud.scheduleuniversity.service.GroupService;
 import com.techstud.scheduleuniversity.service.ParserService;
 import com.techstud.scheduleuniversity.service.ScheduleServiceFacade;
 import com.techstud.scheduleuniversity.service.StudentService;
@@ -38,6 +39,7 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
     private final Mapper<Schedule, EntityModel<ScheduleApiResponse>> scheduleMapper;
     private final ParserService parserService;
     private final Mapper<ScheduleParserResponse, Schedule> parserResponseMapper;
+    private final GroupService groupService;
 
     @Override
     @Transactional
@@ -68,6 +70,11 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
 
         returnedSchedule = parserResponseMapper.map(parserResponse);
 
+        Group studentGroup = student.getGroup();
+        studentGroup.setGroupSchedule(returnedSchedule);
+        studentGroup = groupService.saveOrUpdate(studentGroup);
+        student.setGroup(studentGroup);
+        studentService.saveOrUpdate(student);
         if (returnedSchedule != null) {
            log.info("For student '{}' parsed schedule from university '{}', group '{}', scheduleId: {}",
                    username, importDto.getUniversityShortName(), importDto.getGroupCode(), returnedSchedule.getId());

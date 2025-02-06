@@ -35,4 +35,16 @@ public class StudentServiceImpl implements StudentService {
         }
         return studentRepository.findByGroup(group);
     }
+
+    @Override
+    @Transactional
+    public Student saveOrUpdate(Student student) {
+        return null;
+    }
+
+    @Override
+    @Transactional
+    public List<Student> saveOrUpdateAll(List<Student> students) {
+        return null;
+    }
 }

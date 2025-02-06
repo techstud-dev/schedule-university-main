@@ -1,34 +1,22 @@
 package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.dto.ImportDto;
-import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
-import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
 import com.techstud.scheduleuniversity.entity.Group;
 import com.techstud.scheduleuniversity.entity.Schedule;
 import com.techstud.scheduleuniversity.entity.Student;
-import com.techstud.scheduleuniversity.entity.University;
 import com.techstud.scheduleuniversity.exception.*;
-import com.techstud.scheduleuniversity.kafka.KafkaMessageObserver;
-import com.techstud.scheduleuniversity.kafka.KafkaProducer;
 import com.techstud.scheduleuniversity.mapper.Mapper;
-import com.techstud.scheduleuniversity.repository.GroupRepository;
-import com.techstud.scheduleuniversity.repository.StudentRepository;
-import com.techstud.scheduleuniversity.repository.UniversityRepository;
 import com.techstud.scheduleuniversity.service.GroupService;
 import com.techstud.scheduleuniversity.service.ParserService;
 import com.techstud.scheduleuniversity.service.ScheduleServiceFacade;
 import com.techstud.scheduleuniversity.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +37,7 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
 
         if (!student.getGroup().getGroupCode().equalsIgnoreCase(importDto.getGroupCode())) {
             throw new RequestException("Group in import dto +'" + importDto.getGroupCode() + "' and student group '"
-                    + student.getGroup().getGroupCode() +"' not match!");
+                    + student.getGroup().getGroupCode() + "' not match!");
         }
 
         Schedule returnedSchedule = student.getPersonalSchedule();
@@ -76,9 +64,9 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
         student.setGroup(studentGroup);
         studentService.saveOrUpdate(student);
         if (returnedSchedule != null) {
-           log.info("For student '{}' parsed schedule from university '{}', group '{}', scheduleId: {}",
-                   username, importDto.getUniversityShortName(), importDto.getGroupCode(), returnedSchedule.getId());
-           return scheduleMapper.map(returnedSchedule);
+            log.info("For student '{}' parsed schedule from university '{}', group '{}', scheduleId: {}",
+                    username, importDto.getUniversityShortName(), importDto.getGroupCode(), returnedSchedule.getId());
+            return scheduleMapper.map(returnedSchedule);
         }
         throw new ParserException("Null returned schedule!");
     }

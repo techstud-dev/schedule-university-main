@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -39,7 +38,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             }
         });
 
-        scheduleRepository.findScheduleByLessonList(schedule.getLessonList())
+        scheduleRepository.findByLessonListIn(schedule.getLessonList())
                 .ifPresent(foundedSchedule -> schedule.setId(foundedSchedule.getId()));
         return scheduleRepository.save(schedule);
 

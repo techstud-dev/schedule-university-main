@@ -1,5 +1,9 @@
 package com.techstud.scheduleuniversity.entity;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.gson.Gson;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -48,7 +52,7 @@ public class Lesson extends AuditableEntity {
     @JoinColumn(name = "place_id")
     private Place place;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "lesson_group",
             joinColumns = @JoinColumn(name = "lesson_id"),

@@ -1,5 +1,7 @@
 package com.techstud.scheduleuniversity.entity;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -25,5 +27,4 @@ public enum LessonType {
         }
         return UNKNOWN;
     }
-
 }

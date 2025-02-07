@@ -2,6 +2,7 @@ package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.dto.CreateScheduleDto;
 import com.techstud.scheduleuniversity.dto.ImportDto;
+import com.techstud.scheduleuniversity.dto.MappingScheduleParserDto;
 import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
@@ -26,7 +27,7 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
     private final StudentService studentService;
     private final Mapper<Schedule, EntityModel<ScheduleApiResponse>> scheduleMapper;
     private final ParserService parserService;
-    private final Mapper<ScheduleParserResponse, Schedule> parserResponseMapper;
+    private final Mapper<MappingScheduleParserDto, Schedule> parserResponseMapper;
     private final GroupService groupService;
     private final PlaceService placeService;
     private final TeacherService teacherService;
@@ -34,6 +35,7 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
     private final ScheduleService scheduleService;
     private final Mapper<CreateScheduleDto, Schedule> dtoScheduleMapper;
     private final UniversityService universityService;
+    private final TimeSheetService timeSheetService;
 
     @Override
     @Transactional
@@ -67,7 +69,13 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
 
         ScheduleParserResponse parserResponse = parserService.parseSchedule(parsingTask, student);
 
-        returnedSchedule = parserResponseMapper.map(parserResponse);
+        MappingScheduleParserDto mappingTask = MappingScheduleParserDto
+                .builder()
+                .scheduleParserResponse(parserResponse)
+                .universityShortName(student.getGroup().getUniversity().getShortName())
+                .build();
+
+        returnedSchedule = parserResponseMapper.map(mappingTask);
 
         returnedSchedule = cascadeSave(returnedSchedule);
 
@@ -104,7 +112,13 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
 
         ScheduleParserResponse parserResponse = parserService.parseSchedule(parsingTask, student);
 
-        Schedule returnedSchedule = parserResponseMapper.map(parserResponse);
+        MappingScheduleParserDto mappingTask = MappingScheduleParserDto
+                .builder()
+                .scheduleParserResponse(parserResponse)
+                .universityShortName(student.getGroup().getUniversity().getShortName())
+                .build();
+
+        Schedule returnedSchedule = parserResponseMapper.map(mappingTask);
 
         returnedSchedule = cascadeSave(returnedSchedule);
 
@@ -173,17 +187,22 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
                     .build();
 
             ScheduleParserResponse parserResponse = parserService.parseSchedule(parsingTask, student);
-            returnedSchedule = parserResponseMapper.map(parserResponse);
-        }
-
-        if (returnedSchedule != null) {
-           returnedSchedule = cascadeSave(returnedSchedule);
-              student.setPersonalSchedule(returnedSchedule);
-              Group group = student.getGroup();
-              group.setGroupSchedule(returnedSchedule);
-              group = groupService.saveOrUpdate(group);
-              student.setGroup(group);
+            MappingScheduleParserDto mappingTask = MappingScheduleParserDto
+                    .builder()
+                    .scheduleParserResponse(parserResponse)
+                    .universityShortName(university.getShortName())
+                    .build();
+            returnedSchedule = parserResponseMapper.map(mappingTask);
+            if (returnedSchedule != null) {
+                returnedSchedule.setLessonList(returnedSchedule.getLessonList());
+                returnedSchedule = cascadeSave(returnedSchedule);
+                student.setPersonalSchedule(returnedSchedule);
+                Group group = student.getGroup();
+                group.setGroupSchedule(returnedSchedule);
+                group = groupService.saveOrUpdate(group);
+                student.setGroup(group);
                 studentService.saveOrUpdate(student);
+            }
         }
 
         return scheduleMapper.map(returnedSchedule);
@@ -197,8 +216,9 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
                     lesson.setTeacher(teacherService.saveOrUpdate(cascadeSaveTeacher(lesson.getTeacher())));
                     lesson.setGroups(lesson.getGroups()
                             .stream()
-                            .map(groupService::saveOrUpdate)
+                            .map(group -> groupService.saveOrUpdate(cascadeSaveGroup(group)))
                             .collect(Collectors.toList()));
+                    lesson.setTimeSheet(timeSheetService.saveOrUpdate(lesson.getTimeSheet()));
                     return lessonService.saveOrUpdate(lesson);
                 }).toList();
         schedule.setLessonList(savedSchedules);
@@ -217,5 +237,12 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
         University university = universityService.findByShortName(universityShortName);
         place.setUniversity(university);
         return place;
+    }
+
+    private Group cascadeSaveGroup(Group group) {
+        String universityShortName = group.getUniversity().getShortName();
+        University university = universityService.findByShortName(universityShortName);
+        group.setUniversity(university);
+        return group;
     }
 }

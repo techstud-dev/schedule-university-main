@@ -30,7 +30,7 @@ public class ValidationService implements RequestValidationService, ResponseVali
             emptyFields.add("data.groupCode");
         }
 
-        if (importRequest.getData() != null && importRequest.getData().getUniversityName() == null) {
+        if (importRequest.getData() != null && importRequest.getData().getUniversityShortName() == null) {
             emptyFields.add("data.universityName");
         }
 

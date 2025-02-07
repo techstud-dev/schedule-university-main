@@ -4,7 +4,6 @@ import com.techstud.scheduleuniversity.annotation.RateLimit;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.CreateScheduleDto;
 import com.techstud.scheduleuniversity.dto.ImportDto;
-import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
 import com.techstud.scheduleuniversity.exception.*;
@@ -291,7 +290,7 @@ public class ScheduleController {
             @Parameter(name = "Четность недели", required = true, example = "true")
             @RequestParam boolean isEvenWeek,
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
-        log.info("Incoming request to get schedule day, scheduleDayId: {}, user: {}",dayOfWeek, principal.getName());
+        log.info("Incoming request to get schedule day, scheduleDayId: {}, user: {}", dayOfWeek, principal.getName());
         CollectionModel<EntityModel<ScheduleItem>> scheduleDocument = lessonServiceFacade.getLessonsByStudentAndScheduleDay(principal.getName(), dayOfWeek, isEvenWeek);
         log.info("Outgoing response to get schedule day, scheduleDayId: {}, user: {}, body: {}", dayOfWeek, principal.getName(), scheduleDocument);
         return ResponseEntity.ok().body(scheduleDocument);
@@ -535,7 +534,7 @@ public class ScheduleController {
             @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
         log.info("Incoming request to delete lesson, dayOfWeek: {}, user: {}", dayOfWeek, principal.getName());
         EntityModel<ScheduleApiResponse> updatedSchedule = lessonServiceFacade.deleteLesson(dayOfWeek, timeWindowId, principal.getName());
-        log.info("Outgoing response to delete lesson, dayOfWeek: {}, user: {}, payload: {}",dayOfWeek, principal.getName(), updatedSchedule);
+        log.info("Outgoing response to delete lesson, dayOfWeek: {}, user: {}, payload: {}", dayOfWeek, principal.getName(), updatedSchedule);
         return ResponseEntity.ok(updatedSchedule);
     }
 }

@@ -3,6 +3,7 @@ package com.techstud.scheduleuniversity.mapper;
 import com.techstud.scheduleuniversity.controller.ScheduleController;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
+import com.techstud.scheduleuniversity.entity.Group;
 import com.techstud.scheduleuniversity.entity.Lesson;
 import com.techstud.scheduleuniversity.entity.Schedule;
 import com.techstud.scheduleuniversity.entity.TimeSheet;
@@ -126,10 +127,10 @@ public class ScheduleMapper implements Mapper<Schedule, EntityModel<ScheduleApiR
 
         String type = lesson.getType() != null ? lesson.getType().toString() : "Другое";
         String name = lesson.getName();
-        String teacher = lesson.getTeacher() != null ? lesson.getTeacher().toString() : "-";
-        String place = lesson.getPlace() != null ? lesson.getPlace().toString() : "-";
+        String teacher = lesson.getTeacher() != null ? lesson.getTeacher().getTeacherName() : "-";
+        String place = lesson.getPlace() != null ? lesson.getPlace().getPlaceName() : "-";
         List<String> groups = lesson.getGroups() != null
-                ? lesson.getGroups().stream().map(Object::toString).collect(Collectors.toList())
+                ? lesson.getGroups().stream().map(Group::getGroupCode).collect(Collectors.toList())
                 : Collections.emptyList();
 
         ScheduleItem resultScheduleItem = ScheduleItem.builder()

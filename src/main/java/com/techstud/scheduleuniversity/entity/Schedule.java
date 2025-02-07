@@ -1,5 +1,9 @@
 package com.techstud.scheduleuniversity.entity;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.gson.Gson;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -20,14 +24,14 @@ public class Schedule extends AuditableEntity {
     @SequenceGenerator(name = "schedule_id_seq", sequenceName = "schedule_id_seq", allocationSize = 1)
     private Long id;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "schedule_id_to_lesson",
             joinColumns = @JoinColumn(name = "schedule_id"),
             inverseJoinColumns = @JoinColumn(name = "lesson_id"))
     private List<Lesson> lessonList;
 
-    @Temporal(TemporalType.TIMESTAMP)
+    @Temporal(TemporalType.DATE)
     private LocalDate snapshotDate;
 
 }

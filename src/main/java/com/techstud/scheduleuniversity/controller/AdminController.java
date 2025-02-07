@@ -55,7 +55,7 @@ public class AdminController {
                                             }""")))}
     )
     @PostMapping("/groups/update")
-    @PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateGroups(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Данные для импорта расписания",

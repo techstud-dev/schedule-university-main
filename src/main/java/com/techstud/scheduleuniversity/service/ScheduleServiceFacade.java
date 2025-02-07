@@ -1,5 +1,6 @@
 package com.techstud.scheduleuniversity.service;
 
+import com.techstud.scheduleuniversity.dto.CreateScheduleDto;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
@@ -12,16 +13,15 @@ public interface ScheduleServiceFacade {
             throws ResourceNotFoundException, ParserException, ParserResponseTimeoutException, RequestException;
 
     EntityModel<ScheduleApiResponse> forceImportSchedule(ImportDto importDto, String username)
-            throws ParserException, ScheduleNotFoundException;
+            throws ParserException, RequestException, ParserResponseTimeoutException;
 
-    EntityModel<ScheduleApiResponse> createSchedule(ScheduleParserResponse saveDto, String username);
+    EntityModel<ScheduleApiResponse> createSchedule(CreateScheduleDto saveDto, String username) throws ResourceExistsException;
 
-    void deleteSchedule(Long id, String username)
-            throws ScheduleNotFoundException, StudentNotFoundException;
+    void deleteSchedule(Long id, String username) throws ScheduleNotFoundException;
 
     EntityModel<ScheduleApiResponse> getScheduleById(Long scheduleId) throws ScheduleNotFoundException;
 
-    EntityModel<ScheduleApiResponse> getScheduleByStudent(String username);
+    EntityModel<ScheduleApiResponse> getScheduleByStudent(String username) throws ParserException, ParserResponseTimeoutException;
 }
 
 

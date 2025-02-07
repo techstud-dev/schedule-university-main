@@ -2,6 +2,7 @@ package com.techstud.scheduleuniversity.controller;
 
 import com.techstud.scheduleuniversity.annotation.RateLimit;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
+import com.techstud.scheduleuniversity.dto.CreateScheduleDto;
 import com.techstud.scheduleuniversity.dto.ImportDto;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
@@ -123,7 +124,7 @@ public class ScheduleController {
                             schema = @Schema(implementation = ApiRequestImportDto.class),
                             examples = @ExampleObject(value = Examples.REQUEST_IMPORT)))
             @RequestBody ApiRequest<ImportDto> importRequest,
-            @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException {
+            @Parameter(hidden = true) Principal principal) throws RequestException, ScheduleNotFoundException, ParserException, ParserResponseTimeoutException {
         log.info("Incoming request to force import schedule, body: {}, user: {}", importRequest, principal.getName());
         requestValidationService.validateImportRequest(importRequest);
         EntityModel<ScheduleApiResponse> importedSchedule =
@@ -189,7 +190,7 @@ public class ScheduleController {
     @GetMapping("/postAuthorize")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> getSchedulePostAuthorize(
-            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException, ParserException, ParserResponseTimeoutException {
         log.info("Incoming request to get schedule post authorize, user: {}", principal.getName());
         EntityModel<ScheduleApiResponse> documentSchedule = scheduleServiceFacade.getScheduleByStudent(principal.getName());
         log.info("Outgoing response to get schedule post authorize, user: {} ", principal.getName());
@@ -225,8 +226,8 @@ public class ScheduleController {
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiRequestSaveDto.class)))
-            @RequestBody ApiRequest<ScheduleParserResponse> saveObject,
-            @Parameter(hidden = true) Principal principal) {
+            @RequestBody ApiRequest<CreateScheduleDto> saveObject,
+            @Parameter(hidden = true) Principal principal) throws ResourceExistsException {
         log.info("Incoming request to save schedule, body: {}, user: {}", saveObject, principal.getName());
         EntityModel<ScheduleApiResponse> createdSchedule =
                 scheduleServiceFacade.createSchedule(saveObject.getData(), principal.getName());

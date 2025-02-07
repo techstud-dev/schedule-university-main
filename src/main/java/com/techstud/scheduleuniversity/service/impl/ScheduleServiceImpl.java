@@ -1,6 +1,7 @@
 package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.entity.Schedule;
+import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
 import com.techstud.scheduleuniversity.repository.ScheduleRepository;
 import com.techstud.scheduleuniversity.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -49,5 +51,17 @@ public class ScheduleServiceImpl implements ScheduleService {
         Set<Schedule> savedSchedules = new HashSet<>();
         schedules.forEach(schedule -> savedSchedules.add(saveOrUpdate(schedule)));
         return savedSchedules.stream().toList();
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        scheduleRepository.deleteById(id);
+    }
+
+    @Override
+    public Schedule findById(Long id) throws ScheduleNotFoundException {
+       return scheduleRepository
+               .findById(id)
+               .orElseThrow(() -> new ScheduleNotFoundException("Schedule with id: " + id + " not found"));
     }
 }

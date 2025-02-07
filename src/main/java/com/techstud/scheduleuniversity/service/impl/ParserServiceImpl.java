@@ -1,6 +1,7 @@
 package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.dto.ImportDto;
+import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.entity.Schedule;
 import com.techstud.scheduleuniversity.entity.Student;
@@ -24,7 +25,7 @@ public class ParserServiceImpl implements ParserService {
     private final KafkaMessageObserver kafkaMessageObserver;
 
     @Override
-    public ScheduleParserResponse parseSchedule(ImportDto parsingTask, Student student) throws ParserException, ParserResponseTimeoutException {
+    public ScheduleParserResponse parseSchedule(ParsingTask parsingTask, Student student) throws ParserException, ParserResponseTimeoutException {
         UUID taskId = kafkaProducer.sendToParsingQueue(parsingTask);
         kafkaMessageObserver.registerMessage(taskId);
         ScheduleParserResponse response = kafkaMessageObserver.waitForParserResponse(taskId);

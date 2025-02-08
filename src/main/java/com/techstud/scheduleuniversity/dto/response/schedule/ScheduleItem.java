@@ -3,13 +3,14 @@ package com.techstud.scheduleuniversity.dto.response.schedule;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
+import org.springframework.hateoas.RepresentationModel;
 
 import java.io.Serializable;
 import java.util.List;
 
 @Data
 @Builder
-public class ScheduleItem implements Serializable {
+public class ScheduleItem extends RepresentationModel<ScheduleItem> implements Serializable {
 
     private String id = "-";
     @JsonProperty(value = "isEven")

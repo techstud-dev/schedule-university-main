@@ -1,14 +1,12 @@
 package com.techstud.scheduleuniversity.entity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.gson.Gson;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Transient;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -19,7 +17,8 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @MappedSuperclass
-@Data
+@Getter
+@NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public abstract class AuditableEntity {
 
@@ -41,5 +40,6 @@ public abstract class AuditableEntity {
     private String modifiedBy;
 
     @Transient
+    @Setter
     private Map<String, String> metadata;
 }

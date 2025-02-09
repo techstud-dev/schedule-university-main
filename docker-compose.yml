@@ -1,6 +1,27 @@
 version: '3.8'
 
 services:
+  schedule-university-main:
+    image: schedule-university-main
+    build: .
+    container_name: schedule-university-main-container
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: schedule_university_auth
+      DB_USER: abuser
+      DB_PASSWORD: abuser
+      SPRING_PROFILES_ACTIVE: prod
+      LOGGING_LEVE: INFO
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   postgres:
     image: postgres:17
     container_name: schedule_university_DB
@@ -55,6 +76,8 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: abuser
       ME_CONFIG_MONGODB_URL: mongodb://abuser:abuser@mongo:27017/
       ME_CONFIG_BASICAUTH: false
+
+
 
 volumes:
   postgres_data:

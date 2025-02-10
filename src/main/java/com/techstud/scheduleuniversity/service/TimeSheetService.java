@@ -10,4 +10,6 @@ public interface TimeSheetService {
 
     List<TimeSheet> saveOrUpdateAll(List<TimeSheet> timeSheets);
 
+    TimeSheet findByStandardPattern(String pattern);
+
 }

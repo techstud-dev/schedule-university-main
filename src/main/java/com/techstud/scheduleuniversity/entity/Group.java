@@ -25,7 +25,7 @@ public class Group extends AuditableEntity {
     @SequenceGenerator(name = "university_group_id_seq", sequenceName = "university_group_id_seq", allocationSize = 1)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "university_id")
     private University university;
 
@@ -35,7 +35,7 @@ public class Group extends AuditableEntity {
     @Column(name = "group_code")
     private String groupCode;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "group_schedule_id", referencedColumnName = "id")
     private Schedule groupSchedule;
 

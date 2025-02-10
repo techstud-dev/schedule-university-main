@@ -1,9 +1,5 @@
 package com.techstud.scheduleuniversity.entity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.gson.Gson;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -11,7 +7,9 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 @Data
 @Entity
-@Table(name = "students")
+@Table(name = "students", indexes = {
+        @Index(name = "student_username_index", columnList = "username")
+})
 public class Student extends AuditableEntity {
 
     @Id
@@ -26,7 +24,7 @@ public class Student extends AuditableEntity {
     @JoinColumn(name = "group_id")
     private Group group;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "schedule_id")
     private Schedule personalSchedule;
 

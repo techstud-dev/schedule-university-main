@@ -189,7 +189,7 @@ public class ScheduleController {
     @GetMapping("/postAuthorize")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> getSchedulePostAuthorize(
-            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException, ParserException, ParserResponseTimeoutException {
+            @Parameter(hidden = true) Principal principal) throws ParserException, ParserResponseTimeoutException {
         log.info("Incoming request to get schedule post authorize, user: {}", principal.getName());
         EntityModel<ScheduleApiResponse> documentSchedule = scheduleServiceFacade.getScheduleByStudent(principal.getName());
         log.info("Outgoing response to get schedule post authorize, user: {} ", principal.getName());
@@ -255,7 +255,7 @@ public class ScheduleController {
     public ResponseEntity<Void> deleteSchedule(
             @Parameter(description = "ID расписания", required = true, example = "6763cdfcf16fce69d8f52945")
             @PathVariable Long scheduleId,
-            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException {
         log.info("Incoming request to delete schedule, scheduleId: {}, user: {}", scheduleId, principal.getName());
         scheduleServiceFacade.deleteSchedule(scheduleId, principal.getName());
         log.info("Success response to delete schedule, scheduleId: {}, user: {}", scheduleId, principal.getName());
@@ -289,7 +289,7 @@ public class ScheduleController {
             @PathVariable String dayOfWeek,
             @Parameter(name = "Четность недели", required = true, example = "true")
             @RequestParam boolean isEvenWeek,
-            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException {
         log.info("Incoming request to get schedule day, scheduleDayId: {}, user: {}", dayOfWeek, principal.getName());
         CollectionModel<EntityModel<ScheduleItem>> scheduleDocument = lessonServiceFacade.getLessonsByStudentAndScheduleDay(principal.getName(), dayOfWeek, isEvenWeek);
         log.info("Outgoing response to get schedule day, scheduleDayId: {}, user: {}, body: {}", dayOfWeek, principal.getName(), scheduleDocument);
@@ -326,7 +326,7 @@ public class ScheduleController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> createScheduleDay(
             @RequestBody ApiRequest<List<ScheduleItem>> saveObject,
-            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException, ResourceExistsException {
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, ResourceExistsException {
         log.info("Incoming request to save schedule day by user: {}", principal.getName());
         EntityModel<ScheduleApiResponse> createdSchedule = lessonServiceFacade.createScheduleDay(saveObject.getData(), principal.getName());
         log.info("Outgoing response to save schedule day by user: {}, body: {}", principal.getName(), createdSchedule);
@@ -393,7 +393,7 @@ public class ScheduleController {
             @PathVariable String dayOfWeek,
             @Parameter(name = "Четность недели", required = true, example = "true")
             @RequestParam boolean isEvenWeek,
-            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException {
         log.info("Incoming request to delete schedule day, scheduleDayId: {}, user: {}", dayOfWeek, principal.getName());
         EntityModel<ScheduleApiResponse> updatedSchedule = lessonServiceFacade.deleteScheduleDay(dayOfWeek, principal.getName(), isEvenWeek);
         log.info("Outgoing response to delete schedule day, scheduleDayId: {}, user: {}, updatedSchedule: {}", dayOfWeek, principal.getName(), updatedSchedule);
@@ -426,7 +426,7 @@ public class ScheduleController {
             @PathVariable String dayOfWeek,
             @Parameter(description = "ID времени урока", required = true, example = "6763cdfcf16fce69d8f52945")
             @PathVariable Long timeWindowId,
-            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, ResourceNotFoundException {
         log.info("Incoming request to get lesson, dayOfWeek: {}, user: {}", dayOfWeek, principal.getName());
         CollectionModel<EntityModel<ScheduleItem>> scheduleItems = lessonServiceFacade.getLessonByStudentAndScheduleDayAndTimeWindow(principal.getName(), dayOfWeek, timeWindowId);
         log.info("Outgoing response to get lesson scheduleDayId: {}, user: {}, payload: {}", dayOfWeek, principal.getName(), scheduleItems);
@@ -465,7 +465,7 @@ public class ScheduleController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<EntityModel<ScheduleApiResponse>> saveLesson(
             @RequestBody ApiRequest<ScheduleItem> saveObject,
-            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException {
+            @Parameter(hidden = true) Principal principal) throws ScheduleNotFoundException, StudentNotFoundException, ResourceExistsException {
         log.info("Incoming request to create lesson by user: {}", principal.getName());
         EntityModel<ScheduleApiResponse> updatedSchedule = lessonServiceFacade.createLesson(saveObject.getData(), principal.getName());
         log.info("Outgoing response to create lesson by user: {}, body: {}", principal.getName(), updatedSchedule);

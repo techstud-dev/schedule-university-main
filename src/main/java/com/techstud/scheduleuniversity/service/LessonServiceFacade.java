@@ -2,10 +2,7 @@ package com.techstud.scheduleuniversity.service;
 
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
-import com.techstud.scheduleuniversity.exception.ParserException;
-import com.techstud.scheduleuniversity.exception.ParserResponseTimeoutException;
-import com.techstud.scheduleuniversity.exception.ResourceExistsException;
-import com.techstud.scheduleuniversity.exception.ScheduleNotFoundException;
+import com.techstud.scheduleuniversity.exception.*;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 
@@ -20,13 +17,13 @@ public interface LessonServiceFacade {
 
     EntityModel<ScheduleApiResponse> deleteLesson(String dayOfWeek, Long timeWindowId, String name) throws ScheduleNotFoundException;
 
-    EntityModel<ScheduleApiResponse> updateLesson(String dayOfWeek, Long timeWindowId, ScheduleItem data, String name);
+    EntityModel<ScheduleApiResponse> updateLesson(String dayOfWeek, Long timeWindowId, ScheduleItem data, String name) throws ScheduleNotFoundException;
 
-    EntityModel<ScheduleApiResponse> createLesson(ScheduleItem data, String name);
+    EntityModel<ScheduleApiResponse> createLesson(ScheduleItem data, String name) throws ScheduleNotFoundException, ResourceExistsException;
 
-    CollectionModel<EntityModel<ScheduleItem>> getLessonByStudentAndScheduleDayAndTimeWindow(String name, String dayOfWeek, Long timeWindowId);
+    CollectionModel<EntityModel<ScheduleItem>> getLessonByStudentAndScheduleDayAndTimeWindow(String name, String dayOfWeek, Long timeWindowId) throws ScheduleNotFoundException, ResourceNotFoundException;
 
-    EntityModel<ScheduleApiResponse> deleteScheduleDay(String dayOfWeek, String name, boolean isEvenWeek);
+    EntityModel<ScheduleApiResponse> deleteScheduleDay(String dayOfWeek, String name, boolean isEvenWeek) throws ScheduleNotFoundException;
 
-    EntityModel<ScheduleApiResponse> updateScheduleDay(String dayOfWeek, List<ScheduleItem> data, String name, boolean isEvenWeek);
+    EntityModel<ScheduleApiResponse> updateScheduleDay(String dayOfWeek, List<ScheduleItem> data, String name, boolean isEvenWeek) throws ScheduleNotFoundException;
 }

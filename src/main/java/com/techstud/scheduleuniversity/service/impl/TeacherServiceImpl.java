@@ -19,8 +19,6 @@ public class TeacherServiceImpl implements TeacherService {
 
     private final TeacherRepository teacherRepository;
 
-    //Так как может быть такое, что в одном университете могут быть полные
-    //тезки, всегда сохраняем все объекты
     @Override
     @Transactional
     public Teacher saveOrUpdate(Teacher teacher) {
@@ -28,6 +26,10 @@ public class TeacherServiceImpl implements TeacherService {
         if (teacher.getUniversity().getId() == null) {
             throw new TransientObjectException("University in teacher: " + teacher + "out of context or not exists in db");
         }
+
+        teacherRepository.findByUniversityAndTeacherNameAndLastNameAndFirstNameAndMiddleName(
+                        teacher.getUniversity(), teacher.getTeacherName(), teacher.getLastName(), teacher.getFirstName(), teacher.getMiddleName())
+                .ifPresent(foundedTeacher -> teacher.setId(foundedTeacher.getId()));
         return teacherRepository.save(teacher);
     }
 

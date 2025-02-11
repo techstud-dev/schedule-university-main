@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,7 +46,7 @@ public class LessonServiceFacadeImpl implements LessonServiceFacade {
             // Force initialization of the schedule and its lessons
             initializeSchedule(student.getPersonalSchedule());
             lessons = student.getPersonalSchedule().getLessonList().stream()
-                    .filter(lesson -> lesson.getDayOfWeek().equals(mapRuDayOfWeek(dayOfWeek))
+                    .filter(lesson -> lesson.getDayOfWeek().equals(DayOfWeek.valueOf(dayOfWeek))
                             && lesson.isEvenWeek() == isEvenWeek)
                     .collect(Collectors.toList());
             log.info("Found {} lessons in personal schedule for student '{}'", lessons.size(), username);
@@ -171,9 +172,17 @@ public class LessonServiceFacadeImpl implements LessonServiceFacade {
         List<Lesson> lessons = schedule.getLessonList();
 
         TimeSheet timeSheet = timeSheetService.findByStandardPattern(data.getTime());
+        if(timeSheet == null) {
+            timeSheet = new TimeSheet();
+            String[] times = data.getTime().replaceAll(" ", "").trim().split("-");
+            timeSheet.setFromTime(LocalTime.parse(times[0]));
+            timeSheet.setToTime(LocalTime.parse(times[1]));
+            timeSheet = timeSheetService.saveOrUpdate(timeSheet);
+        }
+        TimeSheet finalTimeSheet = timeSheet;
         boolean isExists = lessons.stream()
                 .anyMatch(lesson -> lesson.getDayOfWeek().equals(mapRuDayOfWeek(data.getDayOfWeek()))
-                        && lesson.getTimeSheet().equals(timeSheet)
+                        && lesson.getTimeSheet().equals(finalTimeSheet)
                         && lesson.isEvenWeek() == data.isEven());
 
         if (isExists) {
@@ -183,6 +192,8 @@ public class LessonServiceFacadeImpl implements LessonServiceFacade {
                     .scheduleItem(data)
                     .universityShortName(student.getGroup().getUniversity().getShortName())
                     .build());
+
+            newLesson = cascadeSaveLesson(newLesson);
             lessons.add(newLesson);
             lessons = lessonService.saveOrUpdateAll(lessons);
             schedule.setLessonList(lessons);
@@ -204,7 +215,7 @@ public class LessonServiceFacadeImpl implements LessonServiceFacade {
         }
         initializeSchedule(student.getPersonalSchedule());
         List<Lesson> lessons = student.getPersonalSchedule().getLessonList().stream()
-                .filter(lesson -> lesson.getDayOfWeek().equals(mapRuDayOfWeek(dayOfWeek))
+                .filter(lesson -> lesson.getDayOfWeek().equals(DayOfWeek.valueOf(dayOfWeek))
                         && lesson.getTimeSheet().getId().equals(timeWindowId))
                 .collect(Collectors.toList());
 
@@ -352,6 +363,15 @@ public class LessonServiceFacadeImpl implements LessonServiceFacade {
             case "Воскресенье" -> DayOfWeek.SUNDAY;
             default -> throw new IllegalArgumentException("Unknown day of week: " + dayOfWeek);
         };
+    }
+
+    private Lesson cascadeSaveLesson(Lesson lesson) {
+        lesson.setTimeSheet(timeSheetService.findByTimeFromAndTimeTo(lesson.getTimeSheet().getFromTime(), lesson.getTimeSheet().getToTime()));
+        lesson.setTeacher(cascadeSaveTeacher(lesson.getTeacher()));
+        lesson.setGroups(lesson.getGroups().stream().map(this::cascadeSaveGroup).toList());
+        lesson.setPlace(cascadeSavePlace(lesson.getPlace()));
+
+        return lesson;
     }
 
     private Teacher cascadeSaveTeacher(Teacher teacher) {

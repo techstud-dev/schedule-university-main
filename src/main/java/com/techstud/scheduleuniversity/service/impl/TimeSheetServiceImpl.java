@@ -41,9 +41,17 @@ public class TimeSheetServiceImpl implements TimeSheetService {
     @Override
     @Transactional(readOnly = true)
     public TimeSheet findByStandardPattern(String pattern) {
+        pattern = pattern.replace(" ", "").trim();
         LocalTime from = LocalTime.parse(pattern.split("-")[0]);
         LocalTime to = LocalTime.parse(pattern.split("-")[1]);
         return timeSheetRepository.findTimeSheetByFromTimeAndToTime(from, to)
-                .orElseThrow(() -> new ResourceNotFoundException("TimeSheet not found for time fromL " + from + ", to: " + to));
+                .orElse(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TimeSheet findByTimeFromAndTimeTo(LocalTime from, LocalTime to) {
+        return timeSheetRepository.findByFromTimeAndToTime(from, to)
+                .orElseThrow(() -> new ResourceNotFoundException("Not found Time sheet time from: " + from + ", to: " + to));
     }
 }

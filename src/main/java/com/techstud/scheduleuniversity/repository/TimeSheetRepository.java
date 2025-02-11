@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface TimeSheetRepository extends JpaRepository<TimeSheet, Long> {
 
     Optional<TimeSheet> findTimeSheetByFromTimeAndToTime(LocalTime fromTime, LocalTime toTime);
+    Optional<TimeSheet> findByFromTimeAndToTime(LocalTime fromTime, LocalTime toTime);
 }

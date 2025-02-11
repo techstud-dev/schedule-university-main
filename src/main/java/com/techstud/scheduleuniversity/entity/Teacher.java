@@ -6,7 +6,9 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = false)
 @Entity
-@Table(name = "teacher")
+@Table(name = "teacher", uniqueConstraints = @UniqueConstraint(columnNames = {
+        "university_id", "teacher_name", "last_name", "first_name", "middle_name"
+}))
 @Data
 public class Teacher extends AuditableEntity {
 

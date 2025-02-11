@@ -1,6 +1,7 @@
 package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.entity.Teacher;
+import com.techstud.scheduleuniversity.entity.University;
 import com.techstud.scheduleuniversity.repository.TeacherRepository;
 import com.techstud.scheduleuniversity.service.TeacherService;
 import lombok.RequiredArgsConstructor;
@@ -39,5 +40,10 @@ public class TeacherServiceImpl implements TeacherService {
         List<Teacher> savedTeachers = new ArrayList<>();
         teachers.forEach(teacher -> savedTeachers.add(teacherRepository.save(teacher)));
         return savedTeachers;
+    }
+
+    public Teacher findByUniversityAndTeacherNameAndLastNameAndFirstNameAndMiddleName(University university, String teacherName, String lastName, String firstName, String middleName) {
+        return teacherRepository.findByUniversityAndTeacherNameAndLastNameAndFirstNameAndMiddleName(university, teacherName, lastName, firstName, middleName)
+                .orElse(null);
     }
 }

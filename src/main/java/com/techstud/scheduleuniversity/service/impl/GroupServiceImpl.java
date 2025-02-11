@@ -1,6 +1,7 @@
 package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.entity.Group;
+import com.techstud.scheduleuniversity.entity.University;
 import com.techstud.scheduleuniversity.repository.GroupRepository;
 import com.techstud.scheduleuniversity.service.GroupService;
 import lombok.RequiredArgsConstructor;
@@ -43,5 +44,11 @@ public class GroupServiceImpl implements GroupService {
             result.add(saveOrUpdate(group));
         });
         return result.stream().toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Group findByUniversityAndGroupCode(String groupCode, University university) {
+        return groupRepository.findByUniversityAndGroupCode(university, groupCode).orElse(null);
     }
 }

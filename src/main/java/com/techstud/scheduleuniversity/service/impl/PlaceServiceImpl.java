@@ -1,6 +1,7 @@
 package com.techstud.scheduleuniversity.service.impl;
 
 import com.techstud.scheduleuniversity.entity.Place;
+import com.techstud.scheduleuniversity.entity.University;
 import com.techstud.scheduleuniversity.repository.PlaceRepository;
 import com.techstud.scheduleuniversity.service.PlaceService;
 import lombok.RequiredArgsConstructor;
@@ -43,5 +44,12 @@ public class PlaceServiceImpl implements PlaceService {
         places.forEach(place -> resultSet.add(saveOrUpdate(place)));
 
         return resultSet.stream().toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Place findByNameAndUniversity(String name, University university) {
+        return placeRepository.findPlaceByPlaceNameAndUniversity(name, university)
+                .orElse(null);
     }
 }

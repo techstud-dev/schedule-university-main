@@ -34,6 +34,9 @@ public class LessonServiceFacadeImpl implements LessonServiceFacade {
     private final Mapper<Schedule, EntityModel<ScheduleApiResponse>> scheduleMapper;
     private final UniversityService universityService;
     private final TimeSheetService timeSheetService;
+    private final TeacherService teacherService;
+    private final PlaceService placeService;
+    private final GroupService groupService;
 
     @Override
     @Transactional(readOnly = true)
@@ -376,19 +379,43 @@ public class LessonServiceFacadeImpl implements LessonServiceFacade {
 
     private Teacher cascadeSaveTeacher(Teacher teacher) {
         String universityShortName = teacher.getUniversity().getShortName();
-        teacher.setUniversity(universityService.findByShortName(universityShortName));
+        University university = universityService.findByShortName(universityShortName);
+        Teacher foundedTeacher = teacherService
+                .findByUniversityAndTeacherNameAndLastNameAndFirstNameAndMiddleName(university, teacher.getTeacherName(),
+                        teacher.getLastName(), teacher.getFirstName(), teacher.getMiddleName());
+        if (foundedTeacher != null) {
+           return foundedTeacher;
+        } else {
+            teacher.setUniversity(university);
+            teacher = teacherService.saveOrUpdate(teacher);
+        }
         return teacher;
     }
 
     private Place cascadeSavePlace(Place place) {
         String universityShortName = place.getUniversity().getShortName();
-        place.setUniversity(universityService.findByShortName(universityShortName));
+        University university = universityService.findByShortName(universityShortName);
+        Place foundedPlace = placeService.findByNameAndUniversity(place.getPlaceName(), university);
+        if(foundedPlace != null) {
+            return foundedPlace;
+        } else {
+            place.setUniversity(university);
+            place = placeService.saveOrUpdate(place);
+        }
         return place;
     }
 
-    private com.techstud.scheduleuniversity.entity.Group cascadeSaveGroup(com.techstud.scheduleuniversity.entity.Group group) {
+    private Group cascadeSaveGroup(Group group) {
         String universityShortName = group.getUniversity().getShortName();
-        group.setUniversity(universityService.findByShortName(universityShortName));
+        University university = universityService.findByShortName(universityShortName);
+        Group foundedGroup = groupService.findByUniversityAndGroupCode(group.getGroupCode(), group.getUniversity());
+
+        if (foundedGroup != null) {
+            return foundedGroup;
+        } else {
+            group.setUniversity(university);
+            group = groupService.saveOrUpdate(group);
+        }
         return group;
     }
 }

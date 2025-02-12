@@ -22,10 +22,10 @@ public class SecurityConfig {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwt.issuer}")
+    @Value("${jwt.sch-auth}")
     private String expectedIssuer;
 
-    @Value("${jwt.audience}")
+    @Value("${jwt.sch-main}")
     private String expectedAudience;
 
     @Bean

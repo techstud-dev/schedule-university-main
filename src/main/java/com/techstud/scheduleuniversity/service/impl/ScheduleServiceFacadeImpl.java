@@ -1,8 +1,6 @@
 package com.techstud.scheduleuniversity.service.impl;
 
-import com.techstud.scheduleuniversity.dto.CreateScheduleDto;
-import com.techstud.scheduleuniversity.dto.ImportDto;
-import com.techstud.scheduleuniversity.dto.MappingScheduleParserDto;
+import com.techstud.scheduleuniversity.dto.*;
 import com.techstud.scheduleuniversity.dto.parser.request.ParsingTask;
 import com.techstud.scheduleuniversity.dto.parser.response.ScheduleParserResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
@@ -195,6 +193,14 @@ public class ScheduleServiceFacadeImpl implements ScheduleServiceFacade {
             }
         }
         initializeSchedule(schedule);
+        return scheduleMapper.map(schedule);
+    }
+
+    @Override
+    public EntityModel<ScheduleApiResponse> updateSchedule(ApiRequest<UpdateScheduleRequest> request, String username, Long scheduleId) {
+        Student student = studentService.findByUsername(username);
+        Schedule schedule = student.getPersonalSchedule();
+
         return scheduleMapper.map(schedule);
     }
 

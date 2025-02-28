@@ -4,6 +4,7 @@ import com.techstud.scheduleuniversity.annotation.RateLimit;
 import com.techstud.scheduleuniversity.dto.ApiRequest;
 import com.techstud.scheduleuniversity.dto.CreateScheduleDto;
 import com.techstud.scheduleuniversity.dto.ImportDto;
+import com.techstud.scheduleuniversity.dto.UpdateScheduleRequest;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleApiResponse;
 import com.techstud.scheduleuniversity.dto.response.schedule.ScheduleItem;
 import com.techstud.scheduleuniversity.exception.*;
@@ -365,6 +366,37 @@ public class ScheduleController {
         EntityModel<ScheduleApiResponse> updatedSchedule = lessonServiceFacade.updateScheduleDay(dayOfWeek, updateObject.getData(), principal.getName(), isEvenWeek);
         log.info("Outgoing response to update schedule day, dayOfWeek: {}, user: {}, body: {}", dayOfWeek, principal.getName(), updatedSchedule);
         return ResponseEntity.ok(updatedSchedule);
+    }
+
+    @Operation(
+            summary = "Запрос на обновление расписания",
+            description = "Полностью удаляет старое расписание и сохраняет новое в БД по ID и имени пользователя.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Успешное обновление расписания",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ScheduleApiResponse.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_SCHEDULE))),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Неавторизован",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = Map.class),
+                                    examples = @ExampleObject(value = Examples.RESPONSE_UNAUTHORIZED))),}
+    )
+    @PutMapping("/{scheduleId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<EntityModel<ScheduleApiResponse>> updateScheduleById(
+            @PathVariable Long scheduleId,
+            @RequestBody ApiRequest<UpdateScheduleRequest> request,
+            @Parameter(hidden = true) Principal principal) {
+        log.info("Incoming request to update schedule, user: {}, scheduleId: {}", principal.getName(), scheduleId);
+        EntityModel<ScheduleApiResponse> response = scheduleServiceFacade.updateSchedule(request, principal.getName(), scheduleId);
+        log.info("Outgoing response to update schedule, user: {}, scheduleId: {}, response: {}", principal.getName(), scheduleId, response);
+        return ResponseEntity.ok().body(response);
     }
 
     @Operation(

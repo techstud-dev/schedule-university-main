@@ -31,7 +31,7 @@ public class ValidationService implements RequestValidationService, ResponseVali
         }
 
         if (importRequest.getData() != null && importRequest.getData().getUniversityShortName() == null) {
-            emptyFields.add("data.universityName");
+            emptyFields.add("data.universityShortName");
         }
 
         if (!emptyFields.isEmpty()) {

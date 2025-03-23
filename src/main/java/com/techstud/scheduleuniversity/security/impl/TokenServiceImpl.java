@@ -20,7 +20,7 @@ public class TokenServiceImpl implements TokenService {
     @Value("${jwt.secret}")
     private String stringSecret;
 
-    @Value("${jwt.issuer}")
+    @Value("${jwt.audience}")
     private String issuer;
 
     private SecretKey key;
